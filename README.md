@@ -7,3 +7,6 @@ nahi voting chal raha hai:
 5-1 
 7-1 
 toh ab first wala karenge
+
+pakka first wala?
+ek baar research karte hai fir dedcide karte hai!
