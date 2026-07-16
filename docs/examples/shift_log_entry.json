@@ -1,0 +1,11 @@
+{
+  "log_id": "LOG-NIGHT-118",
+  "timestamp": "2026-07-16T09:24:00Z",
+  "shift_id": "SHIFT-NIGHT-2026-07-16",
+  "author_role": "Console Operator",
+  "zone_id": "ZONE_B",
+  "equipment_ids": ["P-101", "VENT-ZB-01"],
+  "raw_text": "Faint hydrocarbon odour reported near P-101. Ventilation fan did not restart; hot-work crew remains in the area.",
+  "acknowledged": true,
+  "resolved": false
+}
