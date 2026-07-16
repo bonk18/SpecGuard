@@ -14,7 +14,7 @@ A modular, realistic Digital Twin simulator of a petroleum refinery process unit
 The repository is organized into a modular architecture:
 
 ```text
-et_ai/
+digital_twin/
 ├── simulator/
 │   ├── config.py              # Global configuration, zone definitions, equipment setup
 │   ├── clock.py               # Simulation clock (tick manager)
