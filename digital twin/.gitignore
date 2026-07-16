@@ -1,0 +1,13 @@
+# Datasets and outputs
+tennessee_eastman_process/
+output/
+*.csv
+*.jsonl
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Testing
+.pytest_cache/
