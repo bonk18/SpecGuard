@@ -6,6 +6,13 @@ __pycache__/
 *.sqlite3
 *.db
 
+# RAG indexes are generated locally from authorized documents and should not
+# be committed to the public repository.
+backend/data/knowledge/vector_store/*
+!backend/data/knowledge/vector_store/.gitkeep
+backend/data/knowledge/processed/*
+!backend/data/knowledge/processed/.gitkeep
+
 # Virtual Environment
 .venv/
 venv/
