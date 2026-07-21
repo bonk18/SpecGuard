@@ -25,3 +25,25 @@ node_modules/
 # OS
 .DS_Store
 Thumbs.db
+# AI and ML Caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# Data and Models
+data/raw/
+data/processed/
+data/sim_output/
+*.parquet
+*.pkl
+*.joblib
+
+# Temporary Evaluation Outputs
+evaluation/canonical_scenario_timeline.csv
+evaluation/event_level_predictions.csv
+evaluation/scenario_results.csv
+evaluation/lead_time_results.csv
+evaluation/false_alarm_results.csv

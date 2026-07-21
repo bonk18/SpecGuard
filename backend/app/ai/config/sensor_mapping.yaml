@@ -1,0 +1,73 @@
+categories:
+  - hydrocarbon_lel_pct
+  - h2s_ppm
+  - oxygen_pct
+  - pressure_bar
+  - temperature_c
+  - flow_rate
+  - vibration_mm_s
+  - valve_position_pct
+  - motor_current_a
+  - tank_level_pct
+  - ventilation_status
+  - flame_detected
+  - smoke_detected
+
+sensors:
+  PT-101:
+    category: pressure_bar
+    zone: ZONE_A
+    equipment: TK-101
+    min_val: 0.0
+    max_val: 50.0
+    safety_critical: false
+  GD-105:
+    category: hydrocarbon_lel_pct
+    zone: ZONE_C
+    equipment: H-101
+    min_val: 0.0
+    max_val: 100.0
+    safety_critical: true
+  TT-104:
+    category: temperature_c
+    zone: ZONE_C
+    equipment: H-101
+    min_val: 0.0
+    max_val: 1000.0
+    safety_critical: false
+  H2S-102:
+    category: h2s_ppm
+    zone: ZONE_B
+    equipment: V-101
+    min_val: 0.0
+    max_val: 500.0
+    safety_critical: true
+
+equipment:
+  TK-101:
+    type: storage_tank
+    zone: ZONE_A
+  H-101:
+    type: fired_heater
+    zone: ZONE_C
+  V-101:
+    type: desalter
+    zone: ZONE_B
+
+zones:
+  ZONE_A:
+    name: Crude Oil Tank Farm
+    adjacent:
+      - ZONE_B
+      - ZONE_G
+  ZONE_B:
+    name: Feed Preheat & Desalter Area
+    adjacent:
+      - ZONE_A
+      - ZONE_C
+      - ZONE_G
+  ZONE_C:
+    name: Fired Heater Area
+    adjacent:
+      - ZONE_B
+      - ZONE_D

@@ -1,0 +1,9 @@
+{
+  "total_enabled_rules": 20,
+  "reachable_rules": 20,
+  "unreachable_rules": [],
+  "rules_with_missing_features": [],
+  "rules_with_invalid_types": [],
+  "rules_with_impossible_conditions": [],
+  "coverage_percent": 100.0
+}

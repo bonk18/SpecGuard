@@ -1,0 +1,6 @@
+{
+  "total_enabled_rules": 20,
+  "rules_with_positive_tests": 20,
+  "rules_with_negative_tests": 20,
+  "coverage_percent": 100.0
+}

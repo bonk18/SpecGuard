@@ -1,0 +1,10 @@
+{
+  "hazard_start_time": "2025-06-15T06:00:00+00:00",
+  "first_compound_trigger_time": "2025-06-15T06:00:01+00:00",
+  "first_risk_warning_time": "2025-06-15T06:00:01+00:00",
+  "first_high_risk_time": "2025-06-15T06:00:01+00:00",
+  "baseline_alarm_time": "2025-06-15T06:00:41+00:00",
+  "simulated_incident_time": "2025-06-15T06:08:19+00:00",
+  "lead_time_vs_baseline_seconds": 40.0,
+  "lead_time_vs_incident_seconds": 498.0
+}
