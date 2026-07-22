@@ -616,7 +616,7 @@
         }
 
         function fetchState() {
-            fetch(`/api/simulation/state?zone_id=${selectedZone}`)
+            fetch(`/simulation/state?zone_id=${selectedZone}`)
                 .then(res => res.json())
                 .then(data => {
                     updateUI(data);
@@ -863,20 +863,20 @@
 
         // Simulation control functions
         function resumeSim() {
-            fetch('/api/simulation/resume', { method: 'POST' }).then(() => fetchState());
+            fetch('/simulation/resume', { method: 'POST' }).then(() => fetchState());
         }
 
         function pauseSim() {
-            fetch('/api/simulation/pause', { method: 'POST' }).then(() => fetchState());
+            fetch('/simulation/pause', { method: 'POST' }).then(() => fetchState());
         }
 
         function stepSim() {
-            fetch('/api/simulation/step', { method: 'POST' }).then(() => fetchState());
+            fetch('/simulation/step', { method: 'POST' }).then(() => fetchState());
         }
 
         function resetSim() {
             const sc = document.getElementById('scenario-select').value;
-            fetch('/api/simulation/start', {
+            fetch('/simulation/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ scenario: sc, speed: 1.0 })
@@ -884,7 +884,7 @@
         }
 
         function changeScenario(sc) {
-            fetch('/api/simulation/start', {
+            fetch('/simulation/start', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ scenario: sc, speed: 1.0 })
@@ -892,7 +892,7 @@
         }
 
         function triggerAction(zoneId, action) {
-            fetch('/api/interventions', {
+            fetch('/interventions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ zone_id: zoneId, action_taken: action })

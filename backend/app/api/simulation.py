@@ -3,13 +3,17 @@ import sys
 import time
 from typing import Dict, Any, List
 from pathlib import Path
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from fastapi import APIRouter
 from datetime import datetime
 
 # Setup paths for digital twin
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-sys.path.append(os.path.join(BASE_DIR, "digital twin"))
+digital_twin_path = os.path.join(BASE_DIR, "digital twin")
+if os.path.exists(digital_twin_path):
+    sys.path.append(digital_twin_path)
+else:
+    print(f"Warning: digital twin directory not found at {digital_twin_path}")
 
 try:
     from simulator.plant import Plant, SCENARIO_CLASSES
@@ -22,7 +26,7 @@ except ImportError as e:
 from app.api.intelligence import get_intelligence_service
 from app.schemas import RiskEngineInput
 
-router = APIRouter(prefix="/api/simulation", tags=["simulation"])
+router = APIRouter(prefix="/simulation", tags=["simulation"])
 
 class SimulationController:
     def __init__(self):
@@ -39,6 +43,10 @@ class SimulationController:
         # Intelligence cache
         self.last_ai_update = 0
         self.ai_cache = {}
+        
+        # Thread safety
+        import threading
+        self.lock = threading.Lock()
         
         # Instantiate intelligence service once
         self.intelligence_service = get_intelligence_service()
@@ -57,19 +65,20 @@ class SimulationController:
             self.plant.set_scenario(sc_cls(duration=10000))
 
     def tick(self):
-        if not self.is_running or not self.plant:
-            return
-        
-        now = time.time()
-        if now - self.last_tick_time >= (1.0 / self.speed):
-            row = self.plant.tick()
-            self._process_row(row)
-            self.last_tick_time = now
+        with self.lock:
+            if not self.is_running or not self.plant or self.speed <= 0:
+                return
+            
+            now = time.time()
+            if now - self.last_tick_time >= (1.0 / self.speed):
+                row = self.plant.tick()
+                self._process_row(row)
+                self.last_tick_time = now
 
     def _process_row(self, row: dict):
         self.last_state = row
         
-        zone_ids = ["ZONE_A", "ZONE_B", "ZONE_C", "ZONE_D", "ZONE_E", "ZONE_F", "ZONE_G"]
+        zone_ids = ["ZONE_A", "ZONE_B", "ZONE_C", "ZONE_D", "ZONE_E"]
         
         for zid in zone_ids:
             if zid not in self.zones_data:
@@ -159,23 +168,26 @@ sim_ctrl = SimulationController()
 
 class StartRequest(BaseModel):
     scenario: str
-    speed: float = 1.0
+    speed: float = Field(1.0, gt=0.0)
 
 @router.post("/start")
 def start_sim(req: StartRequest):
-    sim_ctrl._set_scenario(req.scenario)
-    sim_ctrl.speed = req.speed
-    sim_ctrl.is_running = True
+    with sim_ctrl.lock:
+        sim_ctrl._set_scenario(req.scenario)
+        sim_ctrl.speed = req.speed
+        sim_ctrl.is_running = True
     return {"status": "started"}
 
 @router.post("/pause")
 def pause_sim():
-    sim_ctrl.is_running = False
+    with sim_ctrl.lock:
+        sim_ctrl.is_running = False
     return {"status": "paused"}
 
 @router.post("/resume")
 def resume_sim():
-    sim_ctrl.is_running = True
+    with sim_ctrl.lock:
+        sim_ctrl.is_running = True
     return {"status": "resumed"}
 
 @router.post("/step")
@@ -185,91 +197,99 @@ def step_sim():
 
 @router.get("/state")
 def get_state(zone_id: str = "ZONE_D"):
-    sim_ctrl.tick()
-    
-    # Intelligence integration - update every 10 seconds if risk is high
-    now = time.time()
-    if now - sim_ctrl.last_ai_update > 10:
-        sim_ctrl.last_ai_update = now
-        zdata = sim_ctrl.zones_data.get(zone_id, {})
+    with sim_ctrl.lock:
+        sim_ctrl.tick()
         
-        if zdata.get("risk_score", 0) > 40:
-            risk_mapping = {
-                "gas_leak": "TOXIC_GAS_EXPOSURE",
-                "ventilation_failure": "OXYGEN_DEFICIENCY",
-                "pump_failure": "EQUIPMENT_FAILURE",
-                "hot_work_gas_leak": "FIRE_EXPLOSION",
-                "confined_space": "CONFINED_SPACE",
-                "explosion_risk": "FIRE_EXPLOSION"
-            }
-            mapped_risk = risk_mapping.get(sim_ctrl.current_scenario, "UNKNOWN")
-            
-            factor_mapping = {
-                "gas_leak": "HIGH_H2S",
-                "ventilation_failure": "VENTILATION_FAILURE",
-                "pump_failure": "ABNORMAL_FLOW",
-                "hot_work_gas_leak": "HOT_WORK_ACTIVE",
-                "confined_space": "CONFINED_SPACE_ACTIVE",
-                "explosion_risk": "RISING_LEL"
-            }
-            mapped_factor = factor_mapping.get(sim_ctrl.current_scenario, "UNKNOWN")
-
-            # Construct input
-            risk_input = RiskEngineInput(
-                alert_id="ALT-" + str(int(now)),
-                timestamp=datetime.fromtimestamp(now),
-                zone_id=zone_id,
-                equipment_ids=["DC-100"],
-                risk_type=mapped_risk,
-                risk_score=float(zdata["risk_score"]) / 100.0,
-                severity="HIGH",
-                predicted_incident=sim_ctrl.current_scenario.replace("_", " ").title() + " Potential Incident",
-                contributing_factors=[mapped_factor],
-                sensor_evidence={
-                    "hydrocarbon": zdata["sensors"]["hydrocarbon"]["value"],
-                    "temperature": zdata["sensors"]["temperature"]["value"]
-                },
-                estimated_lead_time_minutes=2.0
-            )
-            
-            try:
-                # Call Intelligence Service
-                response = sim_ctrl.intelligence_service.generate(risk_input)
+        # Intelligence trigger for selected zone
+        now = time.time()
+        if now - sim_ctrl.last_ai_update > 2.0:  # Update AI every 2 seconds
+            sim_ctrl.last_ai_update = now
+            if zone_id in sim_ctrl.zones_data:
+                zdata = sim_ctrl.zones_data[zone_id]
+                base_risk = float(zdata["risk_score"])
                 
-                sim_ctrl.ai_cache[zone_id] = {
-                    "triggered_rules": [a.title for a in response.recommended_actions[:2]],
-                    "primary_hazard": response.executive_summary.split(".")[0],
-                    "explanation": response.risk_explanation,
-                    "confidence": response.intelligence_confidence,
-                    "lead_time_vs_baseline": risk_input.estimated_lead_time_minutes * 60
-                }
-            except Exception as e:
-                sim_ctrl.ai_cache[zone_id] = {
-                    "triggered_rules": ["AI_ERROR"],
-                    "primary_hazard": "Intelligence Unavailable",
-                    "explanation": f"Failed to generate intelligence: {str(e)}",
-                    "confidence": 0.0,
-                    "lead_time_vs_baseline": 0.0
-                }
-        else:
-            sim_ctrl.ai_cache[zone_id] = {
-                "triggered_rules": [],
-                "primary_hazard": "NONE / HEALTHY",
-                "explanation": "Sensors reporting normal operations. No hazard indicators detected.",
-                "confidence": 1.0,
-                "lead_time_vs_baseline": 0.0
-            }
+                if base_risk > 50:
+                    # Map simulation scenarios to RiskType
+                    mapped_risk = "UNKNOWN"
+                    if sim_ctrl.current_scenario == "ventilation_failure":
+                        mapped_risk = "TOXIC_EXPOSURE"
+                    elif sim_ctrl.current_scenario == "gas_leak":
+                        mapped_risk = "FIRE"
+                    elif sim_ctrl.current_scenario == "explosion_risk":
+                        mapped_risk = "FIRE_EXPLOSION"
+                    elif sim_ctrl.current_scenario == "hot_work_gas_leak":
+                        mapped_risk = "FIRE_EXPLOSION"
+                    elif sim_ctrl.current_scenario == "pump_failure":
+                        mapped_risk = "EQUIPMENT_FAILURE"
+                    elif sim_ctrl.current_scenario == "confined_space":
+                        mapped_risk = "CONFINED_SPACE"
+                        
+                    factor_mapping = {
+                        "ventilation_failure": "VENTILATION_OFF",
+                        "gas_leak": "RISING_H2S",
+                        "pump_failure": "ABNORMAL_FLOW",
+                        "hot_work_gas_leak": "HOT_WORK_ACTIVE",
+                        "confined_space": "CONFINED_SPACE_ACTIVE",
+                        "explosion_risk": "RISING_LEL"
+                    }
+                    mapped_factor = factor_mapping.get(sim_ctrl.current_scenario, "UNKNOWN")
+
+                    # Construct input
+                    risk_input = RiskEngineInput(
+                        alert_id="ALT-" + str(int(now)),
+                        timestamp=datetime.fromtimestamp(now),
+                        zone_id=zone_id,
+                        equipment_ids=["DC-100"],
+                        risk_type=mapped_risk,
+                        risk_score=float(zdata["risk_score"]) / 100.0,
+                        severity="HIGH",
+                        predicted_incident=sim_ctrl.current_scenario.replace("_", " ").title() + " Potential Incident",
+                        contributing_factors=[mapped_factor],
+                        sensor_evidence={
+                            "hydrocarbon": zdata["sensors"]["hydrocarbon"]["value"],
+                            "temperature": zdata["sensors"]["temperature"]["value"]
+                        },
+                        estimated_lead_time_minutes=2.0
+                    )
+                    
+                    try:
+                        # Call Intelligence Service
+                        response = sim_ctrl.intelligence_service.generate(risk_input)
+                        
+                        sim_ctrl.ai_cache[zone_id] = {
+                            "triggered_rules": [a.title for a in response.recommended_actions[:2]],
+                            "primary_hazard": response.executive_summary.split(".")[0],
+                            "explanation": response.risk_explanation,
+                            "confidence": response.intelligence_confidence,
+                            "lead_time_vs_baseline": risk_input.estimated_lead_time_minutes * 60
+                        }
+                    except Exception as e:
+                        sim_ctrl.ai_cache[zone_id] = {
+                            "triggered_rules": ["AI_ERROR"],
+                            "primary_hazard": "Intelligence Unavailable",
+                            "explanation": f"Failed to generate intelligence: {str(e)}",
+                            "confidence": 0.0,
+                            "lead_time_vs_baseline": 0.0
+                        }
+                else:
+                    sim_ctrl.ai_cache[zone_id] = {
+                        "triggered_rules": [],
+                        "primary_hazard": "NONE / HEALTHY",
+                        "explanation": "Sensors reporting normal operations. No hazard indicators detected.",
+                        "confidence": 1.0,
+                        "lead_time_vs_baseline": 0.0
+                    }
+                    
+            if zone_id in sim_ctrl.zones_data:
+                sim_ctrl.zones_data[zone_id]["ai_fusion"] = sim_ctrl.ai_cache.get(zone_id, {})
             
-    if zone_id in sim_ctrl.zones_data:
-        sim_ctrl.zones_data[zone_id]["ai_fusion"] = sim_ctrl.ai_cache.get(zone_id, {})
-    
-    return {
-        "simulation": {
-            "scenario": sim_ctrl.current_scenario,
-            "is_running": sim_ctrl.is_running
-        },
-        "zones": {k: {"risk_score": v["risk_score"], "worker_count": v["worker_count"]} for k,v in sim_ctrl.zones_data.items()},
-        "selected_zone": sim_ctrl.zones_data.get(zone_id, {}),
-        "history": sim_ctrl.history,
-        "alerts": sim_ctrl.alerts
-    }
+        return {
+            "simulation": {
+                "scenario": sim_ctrl.current_scenario,
+                "is_running": sim_ctrl.is_running
+            },
+            "zones": {k: {"risk_score": v["risk_score"], "worker_count": v["worker_count"]} for k,v in sim_ctrl.zones_data.items()},
+            "selected_zone": sim_ctrl.zones_data.get(zone_id, {}),
+            "history": sim_ctrl.history,
+            "alerts": sim_ctrl.alerts
+        }

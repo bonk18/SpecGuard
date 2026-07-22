@@ -16,16 +16,13 @@ from app.api.simulation import router as simulation_router
 from app.database.database import engine
 from app.database.base import Base
 
-app= FastAPI(
-    title="Sentinel AI Backend",
-    description="Industrial Safety Intelligence Platform",
-    version="1.0.0"
-)
+app = FastAPI(title="SpecGuard Intelligence API")
 
+# Add CORS middleware to allow the frontend to interact with the backend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

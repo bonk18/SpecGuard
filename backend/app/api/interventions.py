@@ -3,7 +3,7 @@ from pydantic import BaseModel
 import time
 
 router = APIRouter(
-    prefix="/api/interventions",
+    prefix="/interventions",
     tags=["Interventions"]
 )
 
