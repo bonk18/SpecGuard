@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sentinel AI | SpecGuard Operations</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-container": "#523200",
+                    "on-surface": "#dde4dd",
+                    "secondary-container": "#0566d9",
+                    "on-primary-fixed": "#002113",
+                    "on-background": "#dde4dd",
+                    "inverse-surface": "#dde4dd",
+                    "on-secondary-container": "#e6ecff",
+                    "on-tertiary": "#472a00",
+                    "surface-container-highest": "#2f3632",
+                    "inverse-on-surface": "#2b322d",
+                    "primary-fixed-dim": "#4edea3",
+                    "inverse-primary": "#006c49",
+                    "surface-container-low": "#161d19",
+                    "primary": "#4edea3",
+                    "on-secondary-fixed-variant": "#004395",
+                    "tertiary-container": "#e29100",
+                    "on-primary-container": "#00422b",
+                    "on-surface-variant": "#bbcabf",
+                    "secondary": "#adc6ff",
+                    "on-primary": "#003824",
+                    "on-error": "#690005",
+                    "tertiary-fixed-dim": "#ffb95f",
+                    "surface-bright": "#343b36",
+                    "on-secondary-fixed": "#001a42",
+                    "surface-container-lowest": "#09100c",
+                    "tertiary-fixed": "#ffddb8",
+                    "on-tertiary-fixed-variant": "#653e00",
+                    "surface-tint": "#4edea3",
+                    "surface": "#0e1511",
+                    "secondary-fixed": "#d8e2ff",
+                    "background": "#0e1511",
+                    "primary-container": "#10b981",
+                    "surface-container": "#1a211d",
+                    "tertiary": "#ffb95f",
+                    "on-secondary": "#002e6a",
+                    "surface-container-high": "#242c27",
+                    "outline": "#86948a",
+                    "outline-variant": "#3c4a42",
+                    "primary-fixed": "#6ffbbe",
+                    "error-container": "#93000a",
+                    "surface-variant": "#2f3632",
+                    "surface-dim": "#0e1511",
+                    "secondary-fixed-dim": "#adc6ff",
+                    "on-error-container": "#ffdad6",
+                    "on-tertiary-fixed": "#2a1700",
+                    "on-primary-fixed-variant": "#005236",
+                    "error": "#ffb4ab"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "3xl": "64px",
+                    "sm": "8px",
+                    "gutter": "20px",
+                    "md": "16px",
+                    "margin-desktop": "40px",
+                    "2xl": "48px",
+                    "xs": "4px",
+                    "xl": "32px",
+                    "margin-mobile": "16px",
+                    "lg": "24px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Outfit"],
+                    "body-md": ["Outfit"],
+                    "code-data": ["monospace"],
+                    "label-md": ["Outfit"],
+                    "label-sm": ["Outfit"],
+                    "headline-sm": ["Outfit"],
+                    "display-lg-mobile": ["Outfit"],
+                    "body-lg": ["Outfit"],
+                    "display-lg": ["Outfit"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "code-data": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
+                    "label-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-lg-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #090d16;
+            color: #dde4dd;
+            overflow-x: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .ambient-glow-error {
+            box-shadow: 0 0 20px rgba(255, 180, 171, 0.15);
+        }
+
+        .pulse-red {
+            animation: pulse-red 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(0.98); }
+        }
+
+        .scanning-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #4edea3, transparent);
+            animation: scan 3s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        .heartbeat {
+            animation: heartbeat 1.5s ease-in-out infinite;
+        }
+
+        @keyframes heartbeat {
+            0% { transform: scale(1); opacity: 0.6; }
+            20% { transform: scale(1.3); opacity: 1; }
+            40% { transform: scale(1); opacity: 0.6; }
+            60% { transform: scale(1.3); opacity: 1; }
+            80% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(1); opacity: 0.6; }
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 10px; }
+    </style>
+</head>
+<body class="font-body-md text-body-md antialiased min-h-screen flex flex-col">
+<!-- TopNavBar Shell (Predicted Component Integration) -->
+<nav class="fixed top-0 left-0 w-full h-16 z-50 bg-surface/60 backdrop-blur-md flex justify-between items-center px-margin-desktop border-b border-outline-variant/30">
+<div class="flex items-center gap-lg">
+<span class="font-headline-md text-headline-md font-bold text-primary tracking-tight">SENTINEL AI</span>
+<div class="h-6 w-[1px] bg-outline-variant/30 hidden md:block"></div>
+<div class="hidden md:flex items-center gap-md">
+<span class="font-label-md text-label-md text-on-surface-variant font-medium">SpecGuard Operations</span>
+</div>
+</div>
+<div class="flex items-center bg-error-container/20 border border-error/20 px-md py-xs rounded-full gap-sm">
+<span class="material-symbols-outlined text-error text-sm heartbeat" id="sim-heartbeat">favorite</span>
+<select id="scenario-select" onchange="changeScenario(this.value)" class="bg-transparent text-error uppercase font-bold border-none outline-none text-xs focus:ring-0 cursor-pointer">
+  <option class="bg-slate-900 text-on-surface" value="normal">Scenario: Normal</option>
+  <option class="bg-slate-900 text-on-surface" value="gas_leak">Scenario: Gas Leak</option>
+  <option class="bg-slate-900 text-on-surface" value="ventilation_failure">Scenario: Vent Failure</option>
+  <option class="bg-slate-900 text-on-surface" value="pump_failure">Scenario: Pump Failure</option>
+  <option class="bg-slate-900 text-on-surface" value="hot_work_gas_leak">Scenario: Hot Work Leak</option>
+  <option class="bg-slate-900 text-on-surface" value="confined_space">Scenario: Confined Space</option>
+  <option class="bg-slate-900 text-on-surface" value="explosion_risk">Scenario: Explosion Risk</option>
+</select>
+<div class="flex gap-xs ml-md border-l border-error/20 pl-md">
+<button onclick="resumeSim()" class="hover:text-primary transition-colors" title="Resume"><span class="material-symbols-outlined text-md">play_arrow</span></button>
+<button onclick="pauseSim()" class="hover:text-primary transition-colors" title="Pause"><span class="material-symbols-outlined text-md">pause</span></button>
+<button onclick="stepSim()" class="hover:text-primary transition-colors" title="Single Step"><span class="material-symbols-outlined text-md">fast_forward</span></button>
+<button onclick="resetSim()" class="hover:text-primary transition-colors" title="Reset"><span class="material-symbols-outlined text-md">refresh</span></button>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<div class="text-right hidden lg:block">
+<p class="font-label-sm text-label-sm text-on-surface-variant">2026-07-22 15:35:10</p>
+<div class="flex items-center justify-end gap-xs">
+<div class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_#4edea3]"></div>
+<span class="font-label-sm text-label-sm text-primary">System Healthy</span>
+</div>
+</div>
+<div class="flex gap-sm">
+<button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-primary/10 transition-colors"><span class="material-symbols-outlined">history</span></button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-primary/10 transition-colors"><span class="material-symbols-outlined">settings</span></button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-primary/10 transition-colors"><span class="material-symbols-outlined">account_circle</span></button>
+</div>
+</div>
+</nav>
+<!-- SideNavBar (Predicted Component Integration) -->
+<aside class="fixed left-0 top-16 bottom-0 w-64 bg-surface-container/60 backdrop-blur-xl border-r border-outline-variant/20 py-lg z-40 hidden md:flex flex-col">
+<div class="px-lg mb-xl">
+<p class="font-headline-sm text-headline-sm font-bold text-on-surface">SpecGuard Ops</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">CDU-100 Unit</p>
+</div>
+<nav class="flex-1 flex flex-col gap-xs px-sm">
+<a class="flex items-center gap-md px-md py-sm text-primary font-bold border-r-4 border-primary bg-primary/5" href="#overview-section" onclick="scrollToSection(event, 'overview-section')">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Overview</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/40 transition-all duration-300" href="#telemetry-section" onclick="scrollToSection(event, 'telemetry-section')">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-md text-label-md">Telemetry</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/40 transition-all duration-300" href="#ai-fusion-section" onclick="scrollToSection(event, 'ai-fusion-section')">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-md text-label-md">Risk Map</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/40 transition-all duration-300" href="#cctv-section" onclick="scrollToSection(event, 'cctv-section')">
+<span class="material-symbols-outlined">videocam</span>
+<span class="font-label-md text-label-md">CCTV Feed</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/40 transition-all duration-300" href="#logs-section" onclick="scrollToSection(event, 'logs-section')">
+<span class="material-symbols-outlined">list_alt</span>
+<span class="font-label-md text-label-md">Logs</span>
+</a>
+</nav>
+<div class="px-sm mt-auto">
+<button class="w-full bg-error-container text-on-error-container font-label-md text-label-md py-md mb-lg rounded-lg hover:brightness-110 transition-all active:scale-95">
+                EMERGENCY STOP
+            </button>
+<div class="flex flex-col gap-xs">
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Grid -->
+<main class="mt-16 md:ml-64 p-gutter grid grid-cols-12 gap-gutter flex-1 overflow-y-auto">
+<!-- Left Column: Unit Map -->
+<div class="col-span-12 lg:col-span-3 flex flex-col gap-gutter" id="overview-section">
+<section class="glass-panel rounded-xl flex flex-col h-full overflow-hidden">
+<div class="px-md py-sm border-b border-outline-variant/30 flex justify-between items-center bg-surface-container-high/40">
+<h3 class="font-label-md text-label-md uppercase tracking-wider">CDU-100 Process Zones</h3>
+<span class="material-symbols-outlined text-on-surface-variant">layers</span>
+</div>
+<div class="flex-1 p-md relative overflow-hidden bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.05)_0%,transparent_70%)]">
+<!-- Zone Visualization Grid -->
+<div class="grid grid-cols-2 gap-md h-full content-start select-none">
+<!-- Zone A -->
+<div id="zone-card-ZONE_A" onclick="selectZone('ZONE_A')" class="glass-panel p-md rounded-lg flex flex-col gap-sm border-primary/20 cursor-pointer hover:bg-slate-800/40 transition-colors">
+<div class="flex justify-between items-start">
+<span class="font-bold text-lg text-primary">A</span>
+<div id="zone-dot-ZONE_A" class="w-2 h-2 rounded-full bg-primary"></div>
+</div>
+<span class="font-label-sm text-label-sm">Inlet Feed</span>
+<span id="zone-score-ZONE_A" class="text-xs text-on-surface-variant font-bold">Risk: 0</span>
+</div>
+<!-- Zone B -->
+<div id="zone-card-ZONE_B" onclick="selectZone('ZONE_B')" class="glass-panel p-md rounded-lg flex flex-col gap-sm border-primary/20 cursor-pointer hover:bg-slate-800/40 transition-colors">
+<div class="flex justify-between items-start">
+<span class="font-bold text-lg text-primary">B</span>
+<div id="zone-dot-ZONE_B" class="w-2 h-2 rounded-full bg-primary"></div>
+</div>
+<span class="font-label-sm text-label-sm">Desalter</span>
+<span id="zone-score-ZONE_B" class="text-xs text-on-surface-variant font-bold">Risk: 0</span>
+</div>
+<!-- Zone C -->
+<div id="zone-card-ZONE_C" onclick="selectZone('ZONE_C')" class="glass-panel p-md rounded-lg flex flex-col gap-sm border-primary/20 cursor-pointer hover:bg-slate-800/40 transition-colors">
+<div class="flex justify-between items-start">
+<span class="font-bold text-lg text-primary">C</span>
+<div id="zone-dot-ZONE_C" class="w-2 h-2 rounded-full bg-primary"></div>
+</div>
+<span class="font-label-sm text-label-sm">Preheat Train</span>
+<span id="zone-score-ZONE_C" class="text-xs text-on-surface-variant font-bold">Risk: 0</span>
+</div>
+<!-- Zone D: Distillation Column (ACTIVE) -->
+<div id="zone-card-ZONE_D" onclick="selectZone('ZONE_D')" class="col-span-2 glass-panel p-md rounded-lg flex flex-col gap-sm border-primary/20 cursor-pointer hover:bg-slate-800/40 transition-colors">
+<div class="flex justify-between items-start">
+<span class="font-bold text-xl text-primary" id="zone-title-ZONE_D">ZONE D</span>
+<div class="text-right">
+<div class="flex items-center gap-xs text-primary font-bold" id="zone-score-wrapper-ZONE_D">
+<span class="material-symbols-outlined text-sm" id="zone-icon-ZONE_D">check_circle</span>
+<span id="zone-score-ZONE_D">Risk: 0</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant text-[10px]">
+<span class="material-symbols-outlined text-[12px]">group</span>
+<span id="zone-workers-ZONE_D">0 PERSONNEL</span>
+</div>
+</div>
+</div>
+<span class="font-label-sm text-label-sm uppercase font-bold text-on-surface">Distillation Column</span>
+</div>
+<!-- Zone E -->
+<div id="zone-card-ZONE_E" onclick="selectZone('ZONE_E')" class="glass-panel p-md rounded-lg flex flex-col gap-sm border-primary/20 cursor-pointer hover:bg-slate-800/40 transition-colors">
+<div class="flex justify-between items-start">
+<span class="font-bold text-lg text-primary">E</span>
+<div id="zone-dot-ZONE_E" class="w-2 h-2 rounded-full bg-primary"></div>
+</div>
+<span class="font-label-sm text-label-sm">Overhead Sys</span>
+<span id="zone-score-ZONE_E" class="text-xs text-on-surface-variant font-bold">Risk: 0</span>
+</div>
+<!-- Zone F -->
+<div id="zone-card-ZONE_F" onclick="selectZone('ZONE_F')" class="glass-panel p-md rounded-lg flex flex-col gap-sm border-primary/20 cursor-pointer hover:bg-slate-800/40 transition-colors">
+<div class="flex justify-between items-start">
+<span class="font-bold text-lg text-primary">F</span>
+<div id="zone-dot-ZONE_F" class="w-2 h-2 rounded-full bg-primary"></div>
+</div>
+<span class="font-label-sm text-label-sm">Side Strippers</span>
+<span id="zone-score-ZONE_F" class="text-xs text-on-surface-variant font-bold">Risk: 0</span>
+</div>
+<!-- Zone G -->
+<div id="zone-card-ZONE_G" onclick="selectZone('ZONE_G')" class="glass-panel p-md rounded-lg flex flex-col gap-sm border-primary/20 cursor-pointer hover:bg-slate-800/40 transition-colors">
+<div class="flex justify-between items-start">
+<span class="font-bold text-lg text-primary">G</span>
+<div id="zone-dot-ZONE_G" class="w-2 h-2 rounded-full bg-primary"></div>
+</div>
+<span class="font-label-sm text-label-sm">Bottom Cooler</span>
+<span id="zone-score-ZONE_G" class="text-xs text-on-surface-variant font-bold">Risk: 0</span>
+</div>
+</div>
+<!-- Schematic Image (Background-ish) -->
+<div class="mt-lg h-40 w-full rounded-lg bg-surface-container/30 relative overflow-hidden border border-outline-variant/10">
+<div class="absolute inset-0 opacity-20 pointer-events-none bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:20px_20px]"></div>
+<img class="w-full h-full object-contain opacity-60" data-alt="Technical schematic diagram of a CDU-100 distillation unit refinery system with pipes, heat exchangers, and tanks. The style is blue-print aesthetic with glowing industrial green accents and thin technical lines on a dark obsidian background. Cinematic lighting highlights the distillation column in the center." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxca4FD_3HVlL8WWW1TmA2FTyjvyx3slgA--sM4RS1u2dD-IqOfmEW8G4_q9-1meG2gT8WM5mZIv7V3mBlogwHyl_owmXJQDUOnUBIwBtPjij3zvjTE4gt5n_NxbiaNNH5GBr-76FULZGgWe9k9ZsHLU5saoNld-bCXlB7-sROLSmGq8qF-70hiuqQMbyF1HmmoonwORDYwuSVoHD0GPbj6h6As9ZDnokJP-ayy2vOhDYLe30p70boov2TTqZfRQ4MyBbQXcSe5lv3"/>
+</div>
+</div>
+</section>
+</div>
+<!-- Center Column: Detail View -->
+<div class="col-span-12 lg:col-span-6 flex flex-col gap-gutter">
+<!-- Header Section -->
+<div class="flex items-center justify-between">
+<div>
+<h2 id="zone-detail-title" class="font-headline-md text-headline-md text-on-surface">Zone D — Distillation Column Detail</h2>
+<p id="zone-detail-subtitle" class="font-body-md text-body-md text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-sm">location_on</span> Main Refinery Floor - Level 4
+                    </p>
+</div>
+<div class="flex gap-sm">
+<button class="bg-surface-variant/40 hover:bg-surface-variant px-md py-sm rounded-lg border border-outline-variant/30 flex items-center gap-sm">
+<span class="material-symbols-outlined text-md">download</span>
+<span class="font-label-md text-label-md">Export Data</span>
+</button>
+<button class="bg-surface-variant/40 hover:bg-surface-variant px-md py-sm rounded-lg border border-outline-variant/30 flex items-center gap-sm">
+<span class="material-symbols-outlined text-md">share</span>
+<span class="font-label-md text-label-md">Share</span>
+</button>
+</div>
+</div>
+<!-- Telemetry Grid -->
+<div class="grid grid-cols-3 gap-md" id="telemetry-section">
+<!-- Gas -->
+<div class="glass-panel p-md rounded-xl flex flex-col gap-xs relative overflow-hidden">
+<div class="flex justify-between items-start">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Hydrocarbon Gas</span>
+<span class="material-symbols-outlined text-tertiary">trending_up</span>
+</div>
+<div class="flex items-baseline gap-xs">
+<span id="sensor-hc-value" class="text-2xl font-bold text-tertiary">1.45%</span>
+<span class="text-xs text-on-surface-variant">LEL</span>
+</div>
+<div id="hc-sparkline" class="h-12 mt-sm">
+
+</div>
+<div class="absolute bottom-0 left-0 w-full h-1 bg-tertiary/20">
+<div id="sensor-hc-bar" class="h-full bg-tertiary w-2/3 shadow-[0_0_10px_#ffb95f]"></div>
+</div>
+</div>
+<!-- H2S -->
+<div class="glass-panel p-md rounded-xl flex flex-col gap-xs">
+<div class="flex justify-between items-start">
+<span class="font-label-sm text-label-sm text-on-surface-variant">H2S</span>
+<span class="material-symbols-outlined text-primary">check_circle</span>
+</div>
+<div class="flex items-baseline gap-xs">
+<span id="sensor-h2s-value" class="text-2xl font-bold text-primary">0.2</span>
+<span class="text-xs text-on-surface-variant">PPM</span>
+</div>
+<div class="mt-auto h-2 bg-surface-container-highest rounded-full overflow-hidden">
+<div id="sensor-h2s-bar" class="h-full bg-primary w-[5%]"></div>
+</div>
+</div>
+<!-- Oxygen -->
+<div class="glass-panel p-md rounded-xl flex flex-col gap-xs">
+<div class="flex justify-between items-start">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Oxygen</span>
+<span class="material-symbols-outlined text-primary">air</span>
+</div>
+<div class="flex items-baseline gap-xs">
+<span id="sensor-oxygen-value" class="text-2xl font-bold text-primary">20.8%</span>
+</div>
+<div class="mt-auto h-2 bg-surface-container-highest rounded-full overflow-hidden">
+<div id="sensor-oxygen-bar" class="h-full bg-primary w-[98%]"></div>
+</div>
+</div>
+<!-- Pressure -->
+<div class="glass-panel p-md rounded-xl flex flex-col gap-xs">
+<div class="flex justify-between items-start">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Pressure</span>
+<span class="material-symbols-outlined text-primary">compress</span>
+</div>
+<div class="flex items-baseline gap-xs">
+<span id="sensor-pressure-value" class="text-2xl font-bold text-primary">1.48</span>
+<span class="text-xs text-on-surface-variant">kg/cm²</span>
+</div>
+</div>
+<!-- Temp -->
+<div class="glass-panel p-md rounded-xl col-span-2 flex flex-col gap-xs border-tertiary/30">
+<div class="flex justify-between items-start">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Process Temp</span>
+<div class="flex items-center gap-xs">
+<span id="sensor-temp-trend" class="font-label-sm text-label-sm text-tertiary">+0.0°C/min</span>
+<span class="material-symbols-outlined text-tertiary text-sm">warning</span>
+</div>
+</div>
+<div class="flex items-baseline gap-md">
+<span id="sensor-temp-value" class="text-4xl font-bold text-tertiary">128.5 °C</span>
+<div class="flex-1 h-4 bg-surface-container-highest rounded-full overflow-hidden self-center">
+<div id="sensor-temp-bar" class="h-full bg-gradient-to-r from-primary to-tertiary w-[75%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Fusion Card -->
+<section class="glass-panel rounded-xl overflow-hidden border-secondary/30 relative" id="ai-fusion-section">
+<div class="scanning-line"></div>
+<div class="px-md py-sm bg-secondary-container/20 border-b border-secondary/20 flex justify-between items-center">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<h3 class="font-label-md text-label-md uppercase tracking-wider text-secondary">AI Threat Fusion Engine</h3>
+</div>
+<div class="px-sm py-xs bg-secondary/20 rounded border border-secondary/30">
+<span id="ai-rule-badge" class="font-label-sm text-label-sm text-secondary font-bold">NO ACTIVE THREATS</span>
+</div>
+</div>
+<div class="p-lg grid grid-cols-12 gap-lg">
+<div class="col-span-12 md:col-span-7 flex flex-col gap-md">
+<div class="flex flex-col gap-xs">
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase">Predicted Hazard</p>
+<h4 id="ai-hazard-text" class="font-headline-sm text-headline-sm text-primary flex items-center gap-sm">
+                                NONE / HEALTHY
+                            </h4>
+</div>
+<p id="ai-explanation-text" class="font-body-md text-body-md text-on-surface/80 leading-relaxed">
+                            Sensors reporting normal operations. No hazard indicators detected.
+                        </p>
+<div class="flex items-center gap-md pt-sm">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Lead Time</span>
+<div id="ai-leadtime-badge-container" class="bg-secondary/10 px-md py-xs rounded-full border border-secondary/30 flex items-center gap-xs hidden">
+<span class="material-symbols-outlined text-secondary text-sm">schedule</span>
+<span id="ai-leadtime-badge-text" class="font-bold text-secondary text-lg">+0s</span>
+</div>
+<span id="ai-no-leadtime" class="text-sm text-on-surface-variant">N/A</span>
+</div>
+</div>
+</div>
+<div class="col-span-12 md:col-span-5 flex flex-col items-center justify-center bg-surface-container-highest/20 rounded-xl p-md border border-outline-variant/10">
+<!-- AI Lead Time Indicator Component -->
+<div class="relative w-32 h-32 flex items-center justify-center">
+<svg class="absolute inset-0 w-full h-full -rotate-90">
+<circle class="text-surface-container-highest" cx="64" cy="64" fill="none" r="58" stroke="currentColor" stroke-width="8"></circle>
+<circle id="ai-progress-circle" class="text-secondary stroke-[url(#grad2)]" cx="64" cy="64" fill="none" r="58" stroke="currentColor" stroke-dasharray="364.4" stroke-dashoffset="364.4" stroke-width="8"></circle>
+<defs>
+<lineargradient id="grad2" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" style="stop-color:#0566d9;stop-opacity:1"></stop>
+<stop offset="100%" style="stop-color:#adc6ff;stop-opacity:1"></stop>
+</lineargradient>
+</defs>
+</svg>
+<div class="text-center">
+<span id="ai-circle-text" class="text-3xl font-extrabold text-secondary">0s</span>
+<p class="text-[10px] text-on-surface-variant uppercase font-bold tracking-tighter">Scan Window</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Incidents & Actions -->
+<div class="col-span-12 lg:col-span-3 flex flex-col gap-gutter">
+<!-- Active Incidents -->
+<section class="glass-panel rounded-xl flex flex-col h-1/2" id="logs-section">
+<div class="px-md py-sm border-b border-outline-variant/30 flex justify-between items-center bg-surface-container-high/40">
+<h3 class="font-label-md text-label-md uppercase tracking-wider">Active Incidents</h3>
+<span class="px-2 py-0.5 bg-error text-on-error text-[10px] rounded font-bold">1 PRIORITY</span>
+</div>
+<div id="incidents-container" class="p-md flex-1 overflow-y-auto flex flex-col gap-md">
+<p class="text-xs text-on-surface-variant text-center my-auto">No active incidents</p>
+</div>
+</section>
+<!-- CCTV Feed -->
+<section class="glass-panel rounded-xl flex flex-col h-1/2 overflow-hidden" id="cctv-section">
+<div class="px-md py-sm border-b border-outline-variant/30 flex justify-between items-center bg-surface-container-high/40">
+<h3 id="cctv-header-text" class="font-label-md text-label-md uppercase tracking-wider">CCTV Feed : CAM-D12</h3>
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-error animate-pulse"></div>
+<span class="text-[10px] font-bold text-error">LIVE</span>
+</div>
+</div>
+<div class="flex-1 relative bg-black">
+<img class="w-full h-full object-cover opacity-80" data-alt="High-contrast surveillance camera footage of an industrial distillation column base inside a refinery. Deep shadows, glowing green and orange status lights on machinery, and three workers in bright orange safety jumpsuits moving around the base. Grainy digital filter with technical data overlays in the corners (timestamps, thermal heat map signatures in yellow)." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBtbm7k87ZN9ou_KgN2Wk6cp1--eWf4sq-gLu_C49t3gV4xwdj23oBxNlzbm1dIW1Z7b9nNYa_e6GbqPAOGzGpaLsV9jba0RerMi0I8s_bQupljWDN1Y_D6LCCpyZR9U36L_639EZ3itQAg3k5jS6BtITXbW8rYYCdo92Yyy4F4QLmNoiEs22U4jb66AtclNrZWgzp2yjsrJLdKKkSS2pHlbpG-H4ar5n3OSpJwgRmdVY0fH46oUa-_46cmsGwoCnLJFC5ImVslsyU"/>
+<div id="cctv-overlay-text" class="absolute top-md right-md bg-black/60 backdrop-blur-sm p-sm rounded text-[10px] font-code-data border border-white/10">
+                        THERMAL: 30.0°C<br/>
+                        OBJ_DET: 0 PERS<br/>
+                        FLOW: 0.0 m/s
+                    </div>
+<div class="absolute bottom-0 left-0 w-full p-md bg-gradient-to-t from-black to-transparent">
+<div id="cctv-logs-container" class="flex flex-col gap-xs">
+<div class="flex items-center gap-md text-[10px] font-code-data text-on-surface-variant">
+  <span>Camera active</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Contextual FAB (Hidden as per protocol for dashboard details but ready for main actions) -->
+<button class="fixed bottom-lg right-lg w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-50 lg:hidden">
+<span class="material-symbols-outlined text-3xl">add_alert</span>
+</button>
+<script>
+        // Micro-interaction for UI atmospheric effects
+        document.addEventListener('mousemove', (e) => {
+            const panels = document.querySelectorAll('.glass-panel');
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
+            
+            panels.forEach(panel => {
+                const rect = panel.getBoundingClientRect();
+                const x = mouseX - rect.left;
+                const y = mouseY - rect.top;
+                
+                if (x > 0 && x < rect.width && y > 0 && y < rect.height) {
+                    panel.style.setProperty('--mouse-x', `${x}px`);
+                    panel.style.setProperty('--mouse-y', `${y}px`);
+                }
+            });
+        });
+
+        // Dynamic State Management
+        function scrollToSection(e, id) {
+            e.preventDefault();
+            const el = document.getElementById(id);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Highlight effect
+                const originalBg = el.style.backgroundColor;
+                el.style.transition = 'all 0.3s ease';
+                el.style.boxShadow = '0 0 0 4px rgba(16, 185, 129, 0.5)'; // primary color ring
+                setTimeout(() => {
+                    el.style.boxShadow = 'none';
+                }, 1000);
+            }
+            
+            // Update sidebar active states
+            const links = document.querySelectorAll('nav a');
+            links.forEach(link => {
+                link.classList.remove('border-r-4', 'border-primary', 'bg-primary/5', 'text-primary', 'font-bold');
+                link.classList.add('text-on-surface-variant');
+            });
+            e.currentTarget.classList.remove('text-on-surface-variant');
+            e.currentTarget.classList.add('border-r-4', 'border-primary', 'bg-primary/5', 'text-primary', 'font-bold');
+        }
+
+        let selectedZone = 'ZONE_D';
+        const ZONE_NAMES = {
+            'ZONE_A': 'Crude Tank Farm',
+            'ZONE_B': 'Preheat & Desalter',
+            'ZONE_C': 'Furnace Area',
+            'ZONE_D': 'Distillation Column',
+            'ZONE_E': 'Product Pumps',
+            'ZONE_F': 'Control Room',
+            'ZONE_G': 'Access Corridor'
+        };
+        const ZONE_LABELS = {
+            'ZONE_A': 'Inlet Feed Area',
+            'ZONE_B': 'Desalter & Preheat',
+            'ZONE_C': 'Preheat Train',
+            'ZONE_D': 'Atmospheric Column',
+            'ZONE_E': 'Overhead Reflux & Pumps',
+            'ZONE_F': 'Side Stripper Tower',
+            'ZONE_G': 'Bottom Cooler Area'
+        };
+
+        function selectZone(zoneId) {
+            selectedZone = zoneId;
+            fetchState();
+        }
+
+        function fetchState() {
+            fetch(`/api/simulation/state?zone_id=${selectedZone}`)
+                .then(res => res.json())
+                .then(data => {
+                    updateUI(data);
+                })
+                .catch(err => console.error("Error polling simulation:", err));
+        }
+
+        function updateUI(data) {
+            // Update Clock & Status
+            const timeEl = document.querySelector('p.font-label-sm.text-on-surface-variant');
+            if (timeEl) {
+                const now = new Date();
+                timeEl.textContent = now.toISOString().split('T')[0] + ' ' + now.toTimeString().split(' ')[0];
+            }
+
+            // Sync Scenario Selector
+            document.getElementById('scenario-select').value = data.simulation.scenario;
+
+            // Update Heartbeat icon
+            const hb = document.getElementById('sim-heartbeat');
+            if (data.simulation.is_running) {
+                hb.classList.add('heartbeat', 'text-error');
+                hb.classList.remove('text-on-surface-variant');
+            } else {
+                hb.classList.remove('heartbeat', 'text-error');
+                hb.classList.add('text-on-surface-variant');
+            }
+
+            // Update Zones summaries
+            Object.keys(data.zones).forEach(zid => {
+                const summary = data.zones[zid];
+                
+                // Get card DOM
+                const card = document.getElementById('zone-card-' + zid);
+                if (!card) return;
+
+                // Update score texts
+                if (zid === 'ZONE_D') {
+                    document.getElementById('zone-score-ZONE_D').textContent = 'RISK SCORE: ' + Math.round(summary.risk_score);
+                    document.getElementById('zone-workers-ZONE_D').textContent = summary.worker_count + ' PERSONNEL';
+                } else {
+                    document.getElementById('zone-score-' + zid).textContent = 'Risk: ' + Math.round(summary.risk_score);
+                }
+
+                // Remove previous style overrides
+                card.className = "glass-panel p-md rounded-lg flex flex-col gap-sm cursor-pointer hover:bg-slate-800/40 transition-colors";
+                if (zid === 'ZONE_D') {
+                    card.className += " col-span-2";
+                }
+                if (zid === selectedZone) {
+                    card.className += " outline outline-2 outline-primary";
+                }
+
+                // Add color class
+                let colorClass = "bg-primary";
+                let borderClass = "border-primary/20";
+                let textClass = "text-primary";
+                let icon = "check_circle";
+
+                if (summary.risk_score >= 80) {
+                    colorClass = "bg-error animate-pulse";
+                    borderClass = "border-error border-2 animate-pulse shadow-[0_0_15px_rgba(255,180,171,0.2)]";
+                    textClass = "text-error";
+                    icon = "warning";
+                } else if (summary.risk_score >= 40) {
+                    colorClass = "bg-tertiary";
+                    borderClass = "border-tertiary/40 border";
+                    textClass = "text-tertiary";
+                    icon = "warning";
+                } else {
+                    colorClass = "bg-primary";
+                    borderClass = "border-primary/20 border";
+                    textClass = "text-primary";
+                    icon = "check_circle";
+                }
+
+                card.className += " " + borderClass;
+
+                if (zid === 'ZONE_D') {
+                    document.getElementById('zone-icon-ZONE_D').textContent = icon;
+                    document.getElementById('zone-icon-ZONE_D').className = "material-symbols-outlined text-sm " + textClass;
+                    document.getElementById('zone-score-wrapper-ZONE_D').className = "flex items-center gap-xs font-bold " + textClass;
+                } else {
+                    const dot = document.getElementById('zone-dot-' + zid);
+                    if (dot) dot.className = "w-2 h-2 rounded-full " + colorClass;
+                }
+            });
+
+            // Update Details Panel
+            const details = data.selected_zone;
+            document.getElementById('zone-detail-title').textContent = `Zone ${selectedZone.split('_')[1]} — ${ZONE_NAMES[selectedZone]} Detail`;
+            document.getElementById('zone-detail-subtitle').innerHTML = `<span class="material-symbols-outlined text-sm">location_on</span> ${ZONE_LABELS[selectedZone]}`;
+
+            // Sensor Readings
+            const sensors = details.sensors || {};
+            
+            // Hydrocarbon
+            const hc = sensors.hydrocarbon;
+            document.getElementById('sensor-hc-value').textContent = hc ? hc.value.toFixed(2) + '%' : '0.00%';
+            document.getElementById('sensor-hc-bar').style.width = hc ? Math.min(100, (hc.value / 3.0) * 100) + '%' : '0%';
+
+            // H2S
+            const h2s = sensors.h2s;
+            document.getElementById('sensor-h2s-value').textContent = h2s ? h2s.value.toFixed(2) : '0.00';
+            document.getElementById('sensor-h2s-bar').style.width = h2s ? Math.min(100, (h2s.value / 15.0) * 100) + '%' : '0%';
+
+            // Oxygen
+            const o2 = sensors.oxygen;
+            document.getElementById('sensor-oxygen-value').textContent = o2 ? o2.value.toFixed(1) + '%' : '20.9%';
+            document.getElementById('sensor-oxygen-bar').style.width = o2 ? Math.min(100, (o2.value / 25.0) * 100) + '%' : '83%';
+
+            // Pressure
+            const pr = sensors.pressure;
+            document.getElementById('sensor-pressure-value').textContent = pr ? pr.value.toFixed(2) : '1.01';
+
+            // Temperature
+            const tmp = sensors.temperature;
+            document.getElementById('sensor-temp-value').textContent = tmp ? tmp.value.toFixed(1) + ' °C' : '30.0 °C';
+            document.getElementById('sensor-temp-bar').style.width = tmp ? Math.min(100, (tmp.value / 150.0) * 100) + '%' : '20%';
+
+            // Temperature Trend (mocked)
+            const trendEl = document.getElementById('sensor-temp-trend');
+            if (trendEl && tmp) {
+                if (data.simulation.scenario !== 'normal' && selectedZone === 'ZONE_D') {
+                    trendEl.textContent = "+2.4°C/min";
+                    trendEl.className = "font-label-sm text-label-sm text-tertiary";
+                } else {
+                    trendEl.textContent = "+0.0°C/min";
+                    trendEl.className = "font-label-sm text-label-sm text-primary";
+                }
+            }
+
+            // Draw sparkline SVG
+            const hist = data.history[selectedZone] || [];
+            let svgHtml = `<svg class="w-full h-full" viewBox="0 0 100 20" preserveAspectRatio="none"><path d="`;
+            if (hist.length > 0) {
+                hist.forEach((val, idx) => {
+                    const x = (idx / (hist.length - 1)) * 100;
+                    const y = 20 - (val / 100) * 18;
+                    svgHtml += `${idx === 0 ? 'M' : 'L'} ${x} ${y}`;
+                });
+            } else {
+                svgHtml += `M 0 10 L 100 10`;
+            }
+            svgHtml += `" fill="none" stroke="#ffb95f" stroke-width="1.5"/></svg>`;
+            document.getElementById('hc-sparkline').innerHTML = svgHtml;
+
+            // AI Fusion Card
+            const fusion = details.ai_fusion || {};
+            const activeRules = fusion.triggered_rules || [];
+            
+            document.getElementById('ai-rule-badge').textContent = activeRules.length > 0 ? activeRules.join(', ') + ' ACTIVE' : 'NO THREATS';
+            
+            const hazardText = document.getElementById('ai-hazard-text');
+            hazardText.textContent = fusion.primary_hazard || 'NONE / HEALTHY';
+            
+            const rScore = fusion.overall_risk_score || 0;
+            hazardText.className = "font-headline-sm text-headline-sm flex items-center gap-sm";
+            if (rScore >= 80) {
+                hazardText.className += " text-error animate-pulse";
+            } else if (rScore >= 40) {
+                hazardText.className += " text-tertiary";
+            } else {
+                hazardText.className += " text-primary";
+            }
+
+            document.getElementById('ai-explanation-text').textContent = fusion.explanation || 'Sensors reporting normal operations. No hazard indicators detected.';
+            document.getElementById('ai-confidence-value').textContent = fusion.confidence ? (fusion.confidence * 100).toFixed(1) + '%' : '100.0%';
+
+            // Lead Time indicator
+            const lt = fusion.lead_time_vs_baseline;
+            const ltContainer = document.getElementById('ai-leadtime-badge-container');
+            const noLt = document.getElementById('ai-no-leadtime');
+            
+            if (lt > 0) {
+                ltContainer.classList.remove('hidden');
+                if (noLt) noLt.classList.add('hidden');
+                document.getElementById('ai-leadtime-badge-text').textContent = `+${lt.toFixed(0)}s Advantage`;
+                document.getElementById('ai-circle-text').textContent = `${lt.toFixed(0)}s`;
+                
+                const dash = 364.4 - (364.4 * Math.min(100, lt) / 100);
+                document.getElementById('ai-progress-circle').setAttribute('stroke-dashoffset', dash);
+            } else {
+                ltContainer.classList.add('hidden');
+                if (noLt) noLt.classList.remove('hidden');
+                document.getElementById('ai-circle-text').textContent = `0s`;
+                document.getElementById('ai-progress-circle').setAttribute('stroke-dashoffset', 364.4);
+            }
+
+            // Update Active Incidents Queue
+            let alertsHtml = "";
+            data.alerts.forEach(alert => {
+                alertsHtml += `
+                <div class="p-md bg-error-container/10 border-l-4 border-error rounded flex flex-col gap-sm ambient-glow-error">
+                    <div class="flex justify-between items-start">
+                        <span class="font-bold text-on-surface">${alert.zone_id}: ${alert.primary_hazard}</span>
+                        <span class="text-xs font-code-data text-error">${alert.alert_id.substring(0,8)}</span>
+                    </div>
+                    <p class="text-xs text-on-surface-variant">${alert.explanation}</p>
+                    <div class="flex gap-sm mt-sm">
+                        <button onclick="triggerAction('${alert.zone_id}', 'EVACUATE')" class="flex-1 bg-error text-on-error font-bold py-sm rounded-md text-sm pulse-red hover:brightness-110 active:scale-95 transition-all">
+                            Evacuate ${alert.zone_id}
+                        </button>
+                    </div>
+                    <button onclick="triggerAction('${alert.zone_id}', 'ISOLATE REFLUX PUMPS')" class="w-full border border-tertiary/60 text-tertiary font-bold py-sm rounded-md text-sm hover:bg-tertiary/10 transition-colors">
+                        Isolate Reflux Pumps
+                    </button>
+                </div>`;
+            });
+            document.getElementById('incidents-container').innerHTML = alertsHtml || `<p class="text-xs text-on-surface-variant text-center my-auto">No active incidents</p>`;
+
+            // Update CCTV overlays
+            document.getElementById('cctv-header-text').textContent = `CCTV Feed : CAM-${selectedZone.split('_')[1]}`;
+            
+            const tempVal = sensors.temperature ? sensors.temperature.value : 30.0;
+            const wCount = details.workers ? details.workers.length : 0;
+            const flowVal = sensors.hydrocarbon ? sensors.hydrocarbon.value : 0.0;
+            
+            document.getElementById('cctv-overlay-text').innerHTML = `
+                THERMAL: ${tempVal.toFixed(1)}°C<br/>
+                OBJ_DET: ${wCount} PERS<br/>
+                FLOW: ${flowVal.toFixed(1)} m/s
+            `;
+
+            // CCTV log lines
+            let cLogs = "";
+            if (details.cctv && details.cctv.length > 0) {
+                details.cctv.slice(-3).forEach(c => {
+                    const timePart = c.timestamp.split('T')[1].substring(0,8);
+                    cLogs += `
+                    <div class="flex items-center gap-md text-[10px] font-code-data text-on-surface-variant">
+                        <span class="text-primary">${timePart}</span>
+                        <span>${c.event_type} (Conf: ${(c.confidence * 100).toFixed(0)}%)</span>
+                    </div>`;
+                });
+            } else {
+                cLogs += `
+                <div class="flex items-center gap-md text-[10px] font-code-data text-on-surface-variant">
+                    <span>No active events on feed</span>
+                </div>`;
+            }
+            document.getElementById('cctv-logs-container').innerHTML = cLogs;
+        }
+
+        // Simulation control functions
+        function resumeSim() {
+            fetch('/api/simulation/resume', { method: 'POST' }).then(() => fetchState());
+        }
+
+        function pauseSim() {
+            fetch('/api/simulation/pause', { method: 'POST' }).then(() => fetchState());
+        }
+
+        function stepSim() {
+            fetch('/api/simulation/step', { method: 'POST' }).then(() => fetchState());
+        }
+
+        function resetSim() {
+            const sc = document.getElementById('scenario-select').value;
+            fetch('/api/simulation/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ scenario: sc, speed: 1.0 })
+            }).then(() => fetchState());
+        }
+
+        function changeScenario(sc) {
+            fetch('/api/simulation/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ scenario: sc, speed: 1.0 })
+            }).then(() => fetchState());
+        }
+
+        function triggerAction(zoneId, action) {
+            fetch('/api/interventions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ zone_id: zoneId, action_taken: action })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(`Action '${action}' submitted successfully! Ticket ID: ${data.intervention_id}`);
+                fetchState();
+            })
+            .catch(err => console.error("Error triggering action:", err));
+        }
+
+        // Initialize and Start polling
+        selectZone('ZONE_D');
+        setInterval(fetchState, 1000);
+    </script>
+</body></html>

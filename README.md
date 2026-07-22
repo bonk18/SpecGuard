@@ -80,23 +80,19 @@ frontend/                      # frontend command-centre scaffold
 ### Completed
 
 - Digital-twin simulator with compound refinery scenarios.
-- Shared safety schemas, including `RiskEngineInput` and
-  `SafetyIntelligenceResponse`.
+- Shared safety schemas, including `RiskEngineInput` and `SafetyIntelligenceResponse`.
 - PDF/Markdown/text RAG ingestion and conservative cleaning.
 - Deterministic offline embeddings and persistent local vector retrieval.
 - Optional Sentence Transformers support using MiniLM.
-- Synthetic SOP corpus and official/local incident corpus, subject to provenance
-  and licensing review.
-- Metadata filtering, deterministic safety-aware reranking, tests, and
-  subsystem documentation.
+- Synthetic SOP corpus and official/local incident corpus, subject to provenance and licensing review.
+- Metadata filtering, deterministic safety-aware reranking, tests, and subsystem documentation.
+- Integrated the compound-risk model with live simulated event streams via FastAPI endpoints.
+- Connected a beautiful, responsive frontend safety-command-centre dashboard with live telemetry, dynamic risk mapping, and CCTV feed UI.
+- Simulated real-world metrics (pressure, LEL, H2S) mapped to accurate simulation scenarios.
 
 ### Next
 
-- Integrate the compound-risk model with live or simulated event streams.
-- Add an LLM-grounded intelligence response while preserving citations and
-  human approval.
-- Expose the intelligence workflow through a FastAPI endpoint.
-- Connect the frontend command centre.
+- Add an LLM-grounded intelligence response while preserving citations and human approval.
 - Evaluate compound detection against a single-sensor baseline.
 
 ## Quick start
@@ -181,6 +177,17 @@ cd "digital twin"
 For a full scenario, omit `--duration` or select another scenario such as
 `hot_work_gas_leak`, `ventilation_failure`, or `confined_space`. See
 `digital twin/README.md` for simulator details.
+
+### Run the Live Dashboard (FastAPI + Frontend)
+
+To run the fully integrated safety command centre, launch the FastAPI server:
+
+```bash
+cd backend
+PYTHONPATH=. ../.venv/bin/python -m uvicorn app.main:app --reload
+```
+
+Then, open your web browser and navigate to `http://127.0.0.1:8000` to view the live responsive UI with real-time telemetry updates!
 
 ## Documentation
 
