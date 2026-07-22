@@ -5,6 +5,7 @@ click==8.4.2
 colorama==0.4.6
 fastapi==0.139.0
 greenlet==3.5.3
+groq>=0.30
 h11==0.16.0
 idna==3.18
 pydantic==2.13.4
