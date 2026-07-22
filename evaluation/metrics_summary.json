@@ -1,0 +1,57 @@
+{
+    "Baseline": {
+        "precision": 0.14285714285714285,
+        "recall": 0.6666666666666666,
+        "f1": 0.23529411764705882,
+        "fpr": 0.6666666666666666,
+        "fnr": 0.3333333333333333,
+        "fa_per_hour": 2057.1428571428573,
+        "scenario_recall": 0.16666666666666666,
+        "mean_lead_time_sec": 0.0,
+        "median_lead_time_sec": 0.0
+    },
+    "Rules Only": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.0,
+        "fnr": 1.0,
+        "fa_per_hour": 0.0,
+        "scenario_recall": 0.0,
+        "mean_lead_time_sec": 0.0,
+        "median_lead_time_sec": 0.0
+    },
+    "Anomaly Only": {
+        "precision": 0.14285714285714285,
+        "recall": 0.0013333333333333333,
+        "f1": 0.002642007926023778,
+        "fpr": 0.0013333333333333333,
+        "fnr": 0.9986666666666667,
+        "fa_per_hour": 4.114285714285715,
+        "scenario_recall": 0.16666666666666666,
+        "mean_lead_time_sec": -3.0,
+        "median_lead_time_sec": -3.0
+    },
+    "Rules + Anomaly": {
+        "precision": 0.14285714285714285,
+        "recall": 0.0013333333333333333,
+        "f1": 0.002642007926023778,
+        "fpr": 0.0013333333333333333,
+        "fnr": 0.9986666666666667,
+        "fa_per_hour": 4.114285714285715,
+        "scenario_recall": 0.16666666666666666,
+        "mean_lead_time_sec": -3.0,
+        "median_lead_time_sec": -3.0
+    },
+    "Full Fusion": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "fpr": 0.0,
+        "fnr": 1.0,
+        "fa_per_hour": 0.0,
+        "scenario_recall": 0.0,
+        "mean_lead_time_sec": 0.0,
+        "median_lead_time_sec": 0.0
+    }
+}

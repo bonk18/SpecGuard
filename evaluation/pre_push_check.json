@@ -1,0 +1,24 @@
+{
+  "verdict": "PASS",
+  "tests": {
+    "passed": 30,
+    "failed": 0,
+    "skipped": 0
+  },
+  "feature_rule_contract_percent": 100,
+  "rule_reachability_percent": 100,
+  "canonical_scenario": {
+    "compound_detected_before_baseline": true,
+    "lead_time_vs_baseline_seconds": 40.0,
+    "lead_time_vs_incident_seconds": 498.0
+  },
+  "secrets_found": false,
+  "unrelated_changes_found": false,
+  "evaluation_artifacts_valid": true,
+  "clean_clone_reproducible": true,
+  "blocking_issues": [],
+  "warnings": [
+    "No ruff config found, skipped ruff."
+  ],
+  "safe_to_push": true
+}

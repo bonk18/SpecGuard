@@ -1,0 +1,27 @@
+enabled_categories:
+  - raw
+  - rolling
+  - trend
+  - cross_sensor
+  - equipment
+  - permit
+  - maintenance
+  - worker
+  - geospatial
+  - data_quality
+
+rolling_windows:
+  - 30
+  - 60
+  - 300
+  - 600
+
+min_samples_for_rolling: 3
+stale_data_limit_seconds: 60
+
+missing_value_policy:
+  default: "NaN" # Handled upstream/downstream appropriately
+  categorical: "unknown"
+
+normalization:
+  method: "min-max-asset-model" # Use min_val / max_val from sensor mappings

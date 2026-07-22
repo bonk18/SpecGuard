@@ -1,0 +1,329 @@
+rules:
+  - rule_id: CRR-001
+    name: "Hot work plus hydrocarbon accumulation"
+    description: "Hot work permit is active while hydrocarbon concentration is rising to dangerous levels."
+    hazard_type: "FLASH_FIRE_EXPLOSION"
+    severity: "CATASTROPHIC"
+    base_score: 90
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: hot_work_active
+          operator: eq
+          value: 1.0
+        - feature: max_hydrocarbon_lel_pct
+          operator: gte
+          value: 1.0
+    escalation:
+      - when:
+          feature: worker_count
+          operator: gt
+          value: 0
+        score_delta: 10
+
+  - rule_id: CRR-002
+    name: "Hot work plus gas trend and failed ventilation"
+    description: "Hot work with rising gas and failed ventilation."
+    hazard_type: "FLASH_FIRE_EXPLOSION"
+    severity: "CATASTROPHIC"
+    base_score: 95
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: hot_work_active
+          operator: eq
+          value: 1.0
+        - feature: slope_hydrocarbon
+          operator: gt
+          value: 0.1
+        - feature: ventilation_health
+          operator: lte
+          value: 0.2
+
+  - rule_id: CRR-003
+    name: "Confined space plus oxygen depletion"
+    description: "Confined space entry while oxygen is dangerously low."
+    hazard_type: "ASPHYXIATION"
+    severity: "CATASTROPHIC"
+    base_score: 100
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: confined_space_active
+          operator: eq
+          value: 1.0
+        - feature: min_oxygen_pct
+          operator: lt
+          value: 19.5
+
+  - rule_id: CRR-004
+    name: "Confined space plus toxic gas"
+    description: "Confined space entry with H2S present."
+    hazard_type: "TOXIC_EXPOSURE"
+    severity: "CATASTROPHIC"
+    base_score: 100
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: confined_space_active
+          operator: eq
+          value: 1.0
+        - feature: max_h2s_ppm
+          operator: gt
+          value: 5.0
+
+  - rule_id: CRR-005
+    name: "Pump maintenance plus incomplete isolation"
+    description: "Maintenance on pump without proper isolation verified."
+    hazard_type: "LOSS_OF_CONTAINMENT"
+    severity: "CRITICAL"
+    base_score: 80
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: isolation_incomplete
+          operator: eq
+          value: 1.0
+        - feature: maintenance_active
+          operator: eq
+          value: 1.0
+
+  - rule_id: CRR-006
+    name: "Line breaking plus residual pressure"
+    description: "Line breaking with pressure remaining in the line."
+    hazard_type: "LOSS_OF_CONTAINMENT"
+    severity: "CATASTROPHIC"
+    base_score: 95
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: line_break_active
+          operator: eq
+          value: 1.0
+        - feature: max_pressure_bar
+          operator: gt
+          value: 1.0
+
+  - rule_id: CRR-007
+    name: "Pressure rise plus valve closure"
+    description: "Pressure is rising while outlet valves are closing."
+    hazard_type: "OVERPRESSURE"
+    severity: "CRITICAL"
+    base_score: 85
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: slope_pressure
+          operator: gt
+          value: 0.5
+        - feature: max_valve_position
+          operator: lt
+          value: 5.0
+
+  - rule_id: CRR-008
+    name: "Pump degradation plus leak indicators"
+    description: "Pump vibrating heavily while gas levels rise."
+    hazard_type: "MECHANICAL_FAILURE_LEAK"
+    severity: "CRITICAL"
+    base_score: 75
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: max_vibration
+          operator: gt
+          value: 10.0
+        - feature: max_hydrocarbon_lel_pct
+          operator: gt
+          value: 2.0
+
+  - rule_id: CRR-009
+    name: "Gas leak plus workers present"
+    description: "Hydrocarbon leak in an occupied zone."
+    hazard_type: "FLASH_FIRE"
+    severity: "HIGH"
+    base_score: 70
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: max_hydrocarbon_lel_pct
+          operator: gt
+          value: 15.0
+        - feature: worker_count
+          operator: gt
+          value: 0
+
+  - rule_id: CRR-010
+    name: "Gas leak propagation into adjacent zone"
+    description: "Gas leak near an open doorway or adjacent zone."
+    hazard_type: "FIRE_PROPAGATION"
+    severity: "HIGH"
+    base_score: 65
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: max_hydrocarbon_lel_pct
+          operator: gt
+          value: 10.0
+        - feature: adjacent_zone_risk
+          operator: gt
+          value: 50.0
+
+  - rule_id: CRR-011
+    name: "Simultaneous conflicting permits"
+    description: "Hot work and line break happening simultaneously."
+    hazard_type: "SIMOPS"
+    severity: "CRITICAL"
+    base_score: 80
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: hot_work_active
+          operator: eq
+          value: 1.0
+        - feature: line_break_active
+          operator: eq
+          value: 1.0
+
+  - rule_id: CRR-012
+    name: "Emergency exit obstruction plus escalating hazard"
+    description: "Blocked exit path while gas is rising."
+    hazard_type: "EVACUATION_FAILURE"
+    severity: "CRITICAL"
+    base_score: 85
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: exit_obstructed
+          operator: eq
+          value: 1.0
+        - feature: slope_hydrocarbon
+          operator: gt
+          value: 0.5
+
+  - rule_id: CRR-013
+    name: "Fire/flame detection plus hydrocarbon presence"
+    description: "Confirmed fire with available fuel."
+    hazard_type: "POOL_FIRE"
+    severity: "CATASTROPHIC"
+    base_score: 100
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: fire_detected
+          operator: eq
+          value: 1.0
+        - feature: max_hydrocarbon_lel_pct
+          operator: gt
+          value: 1.0
+
+  - rule_id: CRR-014
+    name: "Smoke plus temperature rise"
+    description: "Smoke detected with a corresponding temperature increase."
+    hazard_type: "FIRE"
+    severity: "CRITICAL"
+    base_score: 90
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: smoke_detected
+          operator: eq
+          value: 1.0
+        - feature: slope_temperature
+          operator: gt
+          value: 2.0
+
+  - rule_id: CRR-015
+    name: "H2S rise plus worker exposure"
+    description: "Toxic gas present with workers in area."
+    hazard_type: "TOXIC_EXPOSURE"
+    severity: "CATASTROPHIC"
+    base_score: 95
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: max_h2s_ppm
+          operator: gt
+          value: 10.0
+        - feature: worker_count
+          operator: gt
+          value: 0
+
+  - rule_id: CRR-016
+    name: "Sensor disagreement during maintenance"
+    description: "Pressure sensors diverging while maintenance is active."
+    hazard_type: "UNKNOWN_STATE"
+    severity: "MEDIUM"
+    base_score: 50
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: maintenance_active
+          operator: eq
+          value: 1.0
+        - feature: pressure_disagreement
+          operator: gt
+          value: 5.0
+
+  - rule_id: CRR-017
+    name: "Critical safety-system unavailability"
+    description: "ESD bypassed while process active."
+    hazard_type: "UNMITIGATED_RISK"
+    severity: "CRITICAL"
+    base_score: 85
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: esd_bypassed
+          operator: eq
+          value: 1.0
+        - feature: process_active
+          operator: eq
+          value: 1.0
+
+  - rule_id: CRR-018
+    name: "Ventilation failure during hazardous work"
+    description: "Ventilation lost during confined space entry."
+    hazard_type: "ASPHYXIATION"
+    severity: "CATASTROPHIC"
+    base_score: 100
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: ventilation_health
+          operator: lte
+          value: 0.1
+        - feature: confined_space_active
+          operator: eq
+          value: 1.0
+
+  - rule_id: CRR-019
+    name: "Overdue maintenance plus abnormal vibration"
+    description: "Pump past maintenance due date showing vibration."
+    hazard_type: "EQUIPMENT_FAILURE"
+    severity: "HIGH"
+    base_score: 75
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: maintenance_overdue
+          operator: eq
+          value: 1.0
+        - feature: max_vibration
+          operator: gt
+          value: 8.0
+
+  - rule_id: CRR-020
+    name: "Shift handover plus unresolved critical observation"
+    description: "Handover taking place with active unacknowledged alarm."
+    hazard_type: "HUMAN_ERROR"
+    severity: "HIGH"
+    base_score: 65
+    applicable_zones: ["ALL"]
+    conditions:
+      all:
+        - feature: shift_handover_active
+          operator: eq
+          value: 1.0
+        - feature: unack_alarm_count
+          operator: gt
+          value: 0

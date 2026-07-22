@@ -1,0 +1,19 @@
+from enum import Enum
+
+class DataQualityStatus(str, Enum):
+    VALID = "VALID"
+    MISSING = "MISSING"
+    STALE = "STALE"
+    DUPLICATE = "DUPLICATE"
+    INVALID_REF = "INVALID_REF"
+    OUT_OF_BOUNDS = "OUT_OF_BOUNDS"
+    FUTURE_TIMESTAMP = "FUTURE_TIMESTAMP"
+
+class SourceType(str, Enum):
+    SENSOR = "SENSOR"
+    EQUIPMENT = "EQUIPMENT"
+    PERMIT = "PERMIT"
+    MAINTENANCE = "MAINTENANCE"
+    WORKER = "WORKER"
+    CCTV = "CCTV"
+    SCENARIO = "SCENARIO"

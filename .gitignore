@@ -16,28 +16,40 @@ backend/data/knowledge/processed/*
 backend/data/knowledge/model_cache/
 .cache/
 .huggingface/
-
 # Virtual Environment
 .venv/
 venv/
-
 # Environment Variables
 .env
-
 # VS Code
 .vscode/
-
 # Logs
 *.log
-
 # Node
 node_modules/
-
 # Digital-twin generated datasets and scenario output.
 digital twin/output/
 digital twin/*.csv
 digital twin/*.jsonl
-
 # OS
 .DS_Store
 Thumbs.db
+# AI and ML Caches
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+# Data and Models
+data/raw/
+data/processed/
+data/sim_output/
+*.parquet
+*.pkl
+*.joblib
+# Temporary Evaluation Outputs
+evaluation/canonical_scenario_timeline.csv
+evaluation/event_level_predictions.csv
+evaluation/scenario_results.csv
+evaluation/lead_time_results.csv
+evaluation/false_alarm_results.csv
