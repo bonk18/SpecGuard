@@ -1,0 +1,106 @@
+{
+  "intelligence_id": "INT-2026-001",
+  "alert_id": "ALT-2026-001",
+  "generated_at": "2026-07-16T09:30:08Z",
+  "executive_summary": "Zone B has a critical compound flash-fire risk before the normal hydrocarbon alarm threshold is reached.",
+  "risk_explanation": "Hydrocarbon concentration is rising around pump P-101 while ventilation is unavailable, a hot-work permit is active, and workers are present. Together these conditions create a credible ignition pathway even though the gas detector has not reached its normal standalone alarm threshold.",
+  "recommended_actions": [
+    {
+      "action_id": "ACT-001",
+      "title": "Review immediate suspension of hot work",
+      "description": "The area supervisor should verify conditions and, if confirmed, suspend the hot-work permit under the site's approved permit procedure.",
+      "priority": 10,
+      "status": "PROPOSED",
+      "requires_human_approval": true,
+      "target_role": "Area Supervisor",
+      "supporting_evidence_ids": ["EVD-SENSOR-001", "EVD-PERMIT-001", "EVD-SOP-001"]
+    },
+    {
+      "action_id": "ACT-002",
+      "title": "Account for exposed workers",
+      "description": "The shift supervisor should confirm worker locations and apply the approved site evacuation or exclusion procedure if conditions warrant it.",
+      "priority": 9,
+      "status": "PROPOSED",
+      "requires_human_approval": true,
+      "target_role": "Shift Supervisor",
+      "supporting_evidence_ids": ["EVD-CCTV-001", "EVD-SOP-001"]
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "EVD-SENSOR-001",
+      "evidence_type": "SENSOR",
+      "title": "Zone B hydrocarbon trend",
+      "excerpt": "LEL-ZB-04 is rising at 8.4 percent LEL while the normal standalone alarm threshold is 10 percent LEL.",
+      "source_name": "SCADA historian",
+      "source_url": null,
+      "page_number": null,
+      "section_name": "LEL-ZB-04 recent readings",
+      "relevance_score": 0.98
+    },
+    {
+      "evidence_id": "EVD-PERMIT-001",
+      "evidence_type": "PERMIT",
+      "title": "Active Zone B hot-work permit",
+      "excerpt": "Permit PTW-HW-204 is active for hot work near pump P-101.",
+      "source_name": "Permit-to-work service",
+      "source_url": null,
+      "page_number": null,
+      "section_name": "Permit status",
+      "relevance_score": 0.97
+    },
+    {
+      "evidence_id": "EVD-CCTV-001",
+      "evidence_type": "CCTV",
+      "title": "Workers detected near P-101",
+      "excerpt": "Structured CCTV event CCTV-ZB-778 reports three workers in the affected work area.",
+      "source_name": "CCTV event pipeline",
+      "source_url": null,
+      "page_number": null,
+      "section_name": "Worker detection event",
+      "relevance_score": 0.94
+    },
+    {
+      "evidence_id": "EVD-SOP-001",
+      "evidence_type": "SOP",
+      "title": "Hot-work atmospheric safety procedure",
+      "excerpt": "The retrieved procedure requires supervisory review when ventilation or atmospheric conditions become unsafe during hot work.",
+      "source_name": "Prototype Refinery SOP Library",
+      "source_url": "https://example.invalid/sop/hot-work",
+      "page_number": 12,
+      "section_name": "Changing atmospheric conditions",
+      "relevance_score": 0.92
+    }
+  ],
+  "similar_incidents": [
+    {
+      "incident_id": "INC-SYN-014",
+      "title": "Pump seal vapour ignited during nearby hot work",
+      "similarity_score": 0.89,
+      "shared_hazards": [
+        "RISING_LEL",
+        "VENTILATION_FAILURE",
+        "HOT_WORK_ACTIVE",
+        "WORKERS_PRESENT"
+      ],
+      "summary": "Hydrocarbon vapour accumulated after ventilation failed and ignited during permitted hot work.",
+      "root_causes": [
+        "The pump seal leak was not isolated before work began",
+        "Ventilation failure was not linked to permit suspension"
+      ],
+      "preventive_actions": [
+        "Correlate gas trends, ventilation state, workers, and active permits"
+      ],
+      "source_title": "Synthetic refinery learning case 14",
+      "source_url": null,
+      "source_page": 7
+    }
+  ],
+  "intelligence_confidence": 0.9,
+  "insufficient_evidence": false,
+  "limitations": [
+    "This prototype has not verified readings against a production refinery instrument system",
+    "The retrieved historical incident is synthetic and must not be presented as a real event"
+  ],
+  "requires_human_review": true
+}

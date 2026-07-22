@@ -1,0 +1,34 @@
+{
+  "incident_id": "INC-SYN-014",
+  "title": "Pump seal vapour ignited during nearby hot work",
+  "occurred_at": "2024-03-18T14:20:00Z",
+  "industry": "PETROLEUM_REFINERY",
+  "facility_type": "REFINERY_PROCESS_UNIT",
+  "zone_id": "ZONE_B",
+  "equipment_ids": ["P-044", "VENT-PS-02"],
+  "risk_type": "FIRE_EXPLOSION",
+  "severity": "CRITICAL",
+  "permit_types": ["HOT_WORK"],
+  "contributing_hazards": [
+    "RISING_LEL",
+    "VENTILATION_FAILURE",
+    "HOT_WORK_ACTIVE",
+    "WORKERS_PRESENT"
+  ],
+  "summary": "Hydrocarbon vapour from a degrading pump seal accumulated after ventilation failed and ignited during permitted hot work.",
+  "root_causes": [
+    "The pump seal leak was not isolated before work began",
+    "Ventilation failure was not linked to permit suspension"
+  ],
+  "consequences": [
+    "Flash fire caused worker injuries and pump-area damage"
+  ],
+  "preventive_actions": [
+    "Continuously correlate gas trends, ventilation state, worker presence, and active hot-work permits",
+    "Require a supervisor to suspend work when compound risk exceeds the approved threshold"
+  ],
+  "source_title": "Synthetic refinery learning case 14",
+  "source_url": null,
+  "source_page": 7,
+  "is_synthetic": true
+}

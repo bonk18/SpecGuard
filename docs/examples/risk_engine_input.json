@@ -1,0 +1,36 @@
+{
+  "alert_id": "ALT-2026-001",
+  "timestamp": "2026-07-16T09:30:00Z",
+  "zone_id": "ZONE_B",
+  "equipment_ids": ["P-101"],
+  "risk_type": "FIRE_EXPLOSION",
+  "risk_score": 0.91,
+  "severity": "CRITICAL",
+  "predicted_incident": "Hydrocarbon flash fire near pump P-101",
+  "contributing_factors": [
+    "RISING_LEL",
+    "HOT_WORK_ACTIVE",
+    "VENTILATION_FAILURE",
+    "WORKERS_PRESENT"
+  ],
+  "sensor_evidence": {
+    "hc_gas_lel": {
+      "sensor_id": "LEL-ZB-04",
+      "value": 8.4,
+      "unit": "%LEL",
+      "trend": "RISING",
+      "normal_single_sensor_alarm_threshold": 10.0
+    },
+    "ventilation": {
+      "equipment_id": "VENT-ZB-01",
+      "operational": false
+    },
+    "detection_basis": "Compound conditions detected before the normal single-sensor alarm threshold"
+  },
+  "active_permit_ids": ["PTW-HW-204"],
+  "maintenance_event_ids": ["MNT-VENT-031"],
+  "shift_log_ids": ["LOG-NIGHT-118"],
+  "cctv_event_ids": ["CCTV-ZB-778"],
+  "estimated_lead_time_minutes": 12.0,
+  "model_confidence": 0.88
+}
