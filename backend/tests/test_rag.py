@@ -10,7 +10,7 @@ from pydantic import ValidationError
 from app.rag.chunker import chunk_pages
 from app.rag.cli import ingest_documents
 from app.rag.document_loader import DocumentLoadError, load_document
-from app.rag.embedder import DeterministicEmbedder
+from app.rag.embedder import DeterministicEmbedder, SentenceTransformerEmbedder
 from app.rag.metadata import enrich_chunks, load_manifest
 from app.rag.models import DocumentPage, RetrievalQuery, RetrievalResult, SourceDocument
 from app.rag.retriever import Retriever, risk_to_retrieval_query
@@ -230,6 +230,38 @@ def test_fake_embedding_is_deterministic_and_store_validates_dimension(tmp_path:
         store.add([chunk], [[0.0] * 16])
 
 
+def test_sentence_transformer_configuration_is_lazy_and_batched(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: dict[str, object] = {}
+
+    class FakeModel:
+        def __init__(self, name: str) -> None:
+            calls["name"] = name
+
+        def get_sentence_embedding_dimension(self) -> int:
+            return 3
+
+        def encode(self, texts: list[str], **kwargs: object) -> list[list[float]]:
+            calls["texts"] = texts
+            calls.update(kwargs)
+            return [[1.0, 0.0, 0.0] for _ in texts]
+
+    monkeypatch.setitem(sys.modules, "sentence_transformers", SimpleNamespace(SentenceTransformer=FakeModel))
+    monkeypatch.setenv("RAG_EMBEDDING_MODEL", "local/test-model")
+    monkeypatch.setenv("RAG_EMBEDDING_BATCH_SIZE", "2")
+
+    embedder = SentenceTransformerEmbedder()
+    vectors = embedder.embed(["one", "two"])
+
+    assert embedder.model_name == "local/test-model"
+    assert embedder.dimension == 3
+    assert calls["name"] == "local/test-model"
+    assert calls["batch_size"] == 2
+    assert calls["normalize_embeddings"] is True
+    assert vectors == [[1.0, 0.0, 0.0], [1.0, 0.0, 0.0]]
+
+
 def test_vector_store_persists_and_repeated_ingestion_replaces_records(tmp_path: Path) -> None:
     chunks = enrich_chunks(chunk_pages([sample_page("A persistent safety evidence passage.")]))
     embedder = DeterministicEmbedder()
@@ -315,3 +347,82 @@ def test_incremental_cli_ingestion_reports_and_is_idempotent(tmp_path: Path) -> 
     assert first.documents_loaded == second.documents_loaded == 1
     assert first.chunks_created == second.chunks_created == 1
     assert second.persisted_chunks == 1
+
+
+def test_metadata_reranking_preserves_raw_scores_and_prioritizes_exact_controls(
+    tmp_path: Path,
+) -> None:
+    pages = [
+        DocumentPage(
+            document_id="SOP-HOT",
+            page_number=1,
+            text=(
+                "Hot work permit is active. Hydrocarbon gas is rising. "
+                "Ventilation has failed and workers are present."
+            ),
+            source_title="Synthetic Hot Work Safety Procedure",
+            source_path="hot.md",
+            document_type="SOP",
+            is_synthetic=True,
+        ),
+        DocumentPage(
+            document_id="SOP-GAS",
+            page_number=1,
+            text="Gas testing is required for rising LEL, failed ventilation, and workers present.",
+            source_title="Synthetic Gas Testing and Atmosphere Monitoring Procedure",
+            source_path="gas.md",
+            document_type="SOP",
+            is_synthetic=True,
+        ),
+        DocumentPage(
+            document_id="SOP-VENT",
+            page_number=1,
+            text="Ventilation failure requires stop work for rising LEL while workers are present.",
+            source_title="Synthetic Ventilation Failure Response Procedure",
+            source_path="vent.md",
+            document_type="SOP",
+            is_synthetic=True,
+        ),
+        DocumentPage(
+            document_id="SOP-EVAC",
+            page_number=1,
+            text="Emergency evacuation protects workers after a suspected hydrocarbon fire.",
+            source_title="Synthetic Emergency Evacuation Procedure",
+            source_path="evac.md",
+            document_type="SOP",
+            is_synthetic=True,
+        ),
+        DocumentPage(
+            document_id="INC-1",
+            page_number=1,
+            text="A historical incident involved a hydrocarbon fire during maintenance.",
+            source_title="Historical refinery incident",
+            source_path="incident.md",
+            document_type="HISTORICAL_INCIDENT",
+        ),
+    ]
+    chunks = []
+    for page in pages:
+        chunks.extend(enrich_chunks(chunk_pages([page])))
+    embedder = DeterministicEmbedder()
+    store = JsonVectorStore(tmp_path / "rerank-store.json")
+    store.add(chunks, embedder.embed([chunk.text for chunk in chunks]))
+    retriever = Retriever(store, embedder)
+    query = (
+        "Hydrocarbon gas is rising near Pump P-101 while hot work is active, "
+        "ventilation has failed and workers are present"
+    )
+
+    first = retriever.retrieve(query, mode="regulations_and_sops", top_k=4)
+    second = retriever.retrieve(query, mode="regulations_and_sops", top_k=4)
+
+    assert first[0].source_title == "Synthetic Hot Work Safety Procedure"
+    assert all(result.final_score is not None for result in first)
+    assert any(result.final_score > result.similarity_score for result in first)
+    assert [(result.chunk_id, result.final_score) for result in first] == [
+        (result.chunk_id, result.final_score) for result in second
+    ]
+
+    incidents = retriever.retrieve(query, mode="similar_incidents", top_k=3)
+    assert incidents
+    assert all(result.document_type == "HISTORICAL_INCIDENT" for result in incidents)

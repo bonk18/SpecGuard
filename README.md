@@ -1,117 +1,199 @@
-# Digital Twin Petroleum Refinery Simulator
+# SpecGuard
 
-A modular, realistic Digital Twin simulator of a petroleum refinery process unit. This simulator generates continuous, time-series multivariate industrial sensor streams with physically meaningful dependencies between sensors. It is designed specifically to serve as the data source for training and validating AI-powered Industrial Safety Intelligence platforms to detect both simple faults and complex, compound risks.
+SpecGuard is an AI-powered industrial safety intelligence platform for
+petroleum-refinery maintenance operations. It combines operational signals,
+compound-risk detection, safety-document retrieval, and human-reviewed
+interventions in one prototype platform.
 
-## Features
+## Problem
 
-- **Realistic Multivariate Dependencies**: Uses statistical properties extracted from the Tennessee Eastman Process (TEP) to ensure that variables (like pump speed, pipeline pressure, and flow rates) are realistically cross-correlated.
-- **Diverse Simulation Scenarios**: Simulates normal refinery operations as well as 6 distinct fault scenarios ranging from minor equipment wear to severe compound explosion risks.
-- **Granular Event Tracking**: Tracks not just physical sensors (SCADA and Gas), but also worker movements, Permit-to-Work (PTW) statuses, scheduled/reactive maintenance, synthesized CCTV events, and realistic operator shift logs.
-- **Flexible Exporting**: Outputs telemetry as a single monolithic JSON Lines (JSONL) stream or as split relational CSV files by data category.
+Industrial facilities often already have SCADA, gas sensors, permits, work
+orders, shift logs, and cameras. These sources usually remain isolated,
+however, so weak signals are considered independently and are not converted
+into timely compound-risk decisions. SpecGuard connects those signals and
+returns evidence-backed context for a qualified human reviewer.
 
-## Project Structure
+## Core demo scenario
 
-The repository is organized into a modular architecture:
+The primary demonstration follows Pump P-101 during maintenance:
+
+- A hot-work permit is active.
+- Hydrocarbon gas concentration is rising.
+- Ventilation fails.
+- Workers remain in Zone B.
+- No individual signal initially exceeds its standalone alarm threshold.
+
+SpecGuard correlates the permit, atmosphere, ventilation, maintenance, and
+worker context to identify an emerging fire/explosion risk earlier than a
+single-sensor alarm workflow.
+
+## Architecture
 
 ```text
-digital_twin/
-├── simulator/
-│   ├── config.py              # Global configuration, zone definitions, equipment setup
-│   ├── clock.py               # Simulation clock (tick manager)
-│   ├── plant.py               # Plant orchestrator coupling all models together
-│   │
-│   ├── equipment/             # Physical equipment models
-│   │   ├── storage_tank.py
-│   │   ├── pipeline.py
-│   │   ├── pump.py
-│   │   ├── valve.py
-│   │   └── ventilation.py
-│   │
-│   ├── sensor_models/         # Sensor generation and noise
-│   │   ├── process_model.py   # Core TEP-derived multivariate process model
-│   │   ├── scada_sensors.py   # Pressure, temperature, flow, speed SCADA readings
-│   │   ├── gas_sensors.py     # HC (LEL), H2S, VOC, and O2 sensors
-│   │   └── noise.py           # Gaussian noise, drift, and dropouts
-│   │
-│   ├── events/                # Human and organizational event models
-│   │   ├── worker_events.py   # Worker location, task assignment, PPE tracking
-│   │   ├── permit_to_work.py  # PTW lifecycle (Hot Work, Confined Space, etc.)
-│   │   ├── maintenance.py     # Maintenance activities and equipment isolation
-│   │   ├── shift_logs.py      # Automated shift log generation
-│   │   └── cctv_events.py     # Synthesized structured CCTV detections
-│   │
-│   ├── scenario_engine/       # Fault injection and scenario progression
-│   │   ├── base_scenario.py
-│   │   ├── normal.py
-│   │   ├── gas_leak.py
-│   │   ├── ventilation_failure.py
-│   │   ├── pump_failure.py
-│   │   ├── hot_work_gas_leak.py
-│   │   ├── confined_space.py
-│   │   └── explosion_risk.py
-│   │
-│   ├── export/                # Exporters
-│   │   ├── csv_exporter.py
-│   │   └── json_exporter.py
-│   │
-│   └── tep/                   # Tennessee Eastman Process references
-│       ├── extract_statistics.py
-│       └── tep_statistics.json
-│
-├── simulate.py                # Main CLI entry point
-├── requirements.txt           # Project dependencies
-└── output/                    # Generated simulation data directory
+Digital twin
+    ↓
+SCADA / gas / permit / maintenance / worker / CCTV streams
+    ↓
+Compound-risk engine
+    ↓
+RiskEngineInput
+    ↓
+Safety-document and incident RAG
+    ↓
+SafetyIntelligenceResponse
+    ↓
+FastAPI
+    ↓
+Frontend command centre
 ```
 
-## Available Scenarios
+The current RAG layer stops at evidence retrieval. Future response generation
+must remain advisory and human-approved; it must not directly control plant
+equipment.
 
-1. **`normal`** (100,000 rows): Normal steady-state operation with natural variability, diurnal cycles, and shift changes.
-2. **`gas_leak`** (5,000 rows): Small gas leak developing from pump seal degradation, leading to detection and emergency response.
-3. **`ventilation_failure`** (5,000 rows): Fan motor degradation leading to complete failure and gas accumulation.
-4. **`pump_failure`** (5,000 rows): Bearing wear progression causing vibration, overheating, seizure, and switchover.
-5. **`hot_work_gas_leak`** (5,000 rows): Compound scenario where an undetected leak develops near an active hot work permit.
-6. **`confined_space`** (5,000 rows): O2 depletion in a confined space, worker entry without proper gas testing, and rescue.
-7. **`explosion_risk`** (5,000 rows): Maximum risk compound scenario featuring a simultaneous pump seal failure, ventilation failure, and active hot work leading to an Emergency Shut Down (ESD).
+## Platform components
 
-## Installation
+- Synthetic petroleum-refinery digital twin with process, SCADA, gas, permit,
+  maintenance, shift-log, worker, and CCTV event streams.
+- Compound-risk contracts shared through Pydantic schemas.
+- Deterministic local safety metadata and persistent JSON vector retrieval.
+- Authorized local incident/regulatory documents and clearly labelled synthetic
+  SOPs.
+- FastAPI backend foundations and a frontend safety-command-centre scaffold.
+- Evidence-backed intervention workflow for the next intelligence layer.
 
-Ensure you have a Python environment (e.g., conda) setup. Install the dependencies:
+## Repository structure
+
+```text
+digital twin/                  # synthetic refinery simulator and scenarios
+backend/app/schemas/           # public Pydantic safety contracts
+backend/app/rag/               # loading, cleaning, chunking, embedding, retrieval
+backend/data/knowledge/        # manifest, source corpus, and generated local index
+backend/tests/                 # schema and RAG tests
+backend/examples/              # integration handoff examples
+docs/                          # schema and RAG architecture guides
+frontend/                      # frontend command-centre scaffold
+```
+
+## Current implementation status
+
+### Completed
+
+- Digital-twin simulator with compound refinery scenarios.
+- Shared safety schemas, including `RiskEngineInput` and
+  `SafetyIntelligenceResponse`.
+- PDF/Markdown/text RAG ingestion and conservative cleaning.
+- Deterministic offline embeddings and persistent local vector retrieval.
+- Optional Sentence Transformers support using MiniLM.
+- Synthetic SOP corpus and official/local incident corpus, subject to provenance
+  and licensing review.
+- Metadata filtering, deterministic safety-aware reranking, tests, and
+  subsystem documentation.
+
+### Next
+
+- Integrate the compound-risk model with live or simulated event streams.
+- Add an LLM-grounded intelligence response while preserving citations and
+  human approval.
+- Expose the intelligence workflow through a FastAPI endpoint.
+- Connect the frontend command centre.
+- Evaluate compound detection against a single-sensor baseline.
+
+## Quick start
+
+Create and activate a virtual environment, then install the core and test
+dependencies:
 
 ```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 ```
 
-*(Note: The `numpy`, `pandas`, and `scipy` packages are required.)*
+The deterministic backend test command verified in this repository is:
 
-## Usage
-
-Use the `simulate.py` CLI to run simulations. 
-
-### Basic Usage
-
-Run the normal scenario (default 100,000 seconds/rows) and output to CSV:
 ```bash
-python simulate.py --scenario normal
+PYTHONPATH=backend .venv/bin/python -m pytest backend/tests -v
 ```
 
-Run a specific fault scenario:
+To enable real local semantic embeddings, install the optional RAG dependency
+set. This downloads no model during tests; model weights are managed by the
+local Sentence Transformers environment:
+
 ```bash
-python simulate.py --scenario gas_leak
+pip install -r requirements-rag.txt
 ```
 
-### Advanced Usage
+### Rebuild and query the knowledge base
 
-Run all scenarios sequentially to generate the complete 130,000-row dataset, outputting both JSON and split CSV files:
+From `backend/`, the verified deterministic commands are:
+
 ```bash
-python simulate.py --scenario all --format both --split --output ./output
+cd backend
+PYTHONPATH=. ../.venv/bin/python -m app.rag.cli inspect
+PYTHONPATH=. ../.venv/bin/python -m app.rag.cli ingest --rebuild
+PYTHONPATH=. ../.venv/bin/python -m app.rag.cli query \
+  "Hydrocarbon gas is rising near Pump P-101 while hot work is active, ventilation has failed and workers are present" \
+  --mode all --top-k 6
 ```
 
-Override the duration of a scenario (in seconds/ticks):
+Use optional MiniLM embeddings explicitly after installing
+`requirements-rag.txt`:
+
 ```bash
-python simulate.py --scenario ventilation_failure --duration 7200
+PYTHONPATH=. ../.venv/bin/python -m app.rag.cli ingest --rebuild \
+  --embedder sentence-transformers
+PYTHONPATH=. ../.venv/bin/python -m app.rag.cli query \
+  --embedder sentence-transformers \
+  "Hydrocarbon gas is rising while hot work is active and ventilation has failed"
 ```
 
-### Output Formats
-- **Combined CSV**: A monolithic `simulation_data.csv` containing all 56+ telemetry columns.
-- **Split CSVs (`--split`)**: Separates data into domain-specific files (`scada.csv`, `gas.csv`, `workers.csv`, `permits.csv`, `maintenance.csv`, `equipment.csv`, `shift_logs.csv`, `cctv.csv`). Recommended for building relational databases.
-- **JSON Lines (`--format json`)**: A hierarchical `simulation_data.jsonl` where each line is a tick containing nested telemetry categories. Highly recommended for direct ingestion into document databases or stream processing tools.
+The default is deterministic. It can also be selected through
+`RAG_EMBEDDER=deterministic` or `RAG_EMBEDDER=sentence-transformers`. The real
+model defaults to `sentence-transformers/all-MiniLM-L6-v2` and can be changed
+with `RAG_EMBEDDING_MODEL`.
+
+### RiskEngineInput handoff example
+
+After rebuilding the index, run:
+
+```bash
+PYTHONPATH=backend .venv/bin/python backend/examples/risk_to_retrieval.py
+```
+
+The example converts a validated `RiskEngineInput` into a deterministic query,
+searches operational SOP/regulatory evidence and historical incidents, and
+prints structured JSON with raw similarity, final reranking score, source
+metadata, synthetic status, and matched safety tags.
+
+### Run a digital-twin scenario
+
+The following short smoke command was verified without generating a large
+dataset:
+
+```bash
+cd "digital twin"
+../.venv/bin/python simulate.py --scenario explosion_risk --duration 10 \
+  --format json --output /tmp/specguard-digital-twin-smoke --quiet
+```
+
+For a full scenario, omit `--duration` or select another scenario such as
+`hot_work_gas_leak`, `ventilation_failure`, or `confined_space`. See
+`digital twin/README.md` for simulator details.
+
+## Documentation
+
+- [Schema architecture](docs/SCHEMA_ARCHITECTURE.md) explains public contracts,
+  validation, ownership, and integration boundaries.
+- [RAG knowledge base](docs/RAG_KNOWLEDGE_BASE.md) explains the corpus,
+  ingestion, embeddings, filters, reranking, and safety limitations.
+
+## Safety disclaimer
+
+SpecGuard is a hackathon prototype. Synthetic SOPs are explicitly **not for
+real industrial use**. Retrieved evidence and future recommendations require
+qualified human review and approval. The platform does not directly control
+industrial equipment, replace approved refinery procedures, establish universal
+alarm thresholds, or override a facility's permit, isolation, emergency, or
+engineering controls.

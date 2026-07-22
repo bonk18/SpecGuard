@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.pytest_cache/
 *.sqlite3
 *.db
 
@@ -31,6 +32,11 @@ venv/
 
 # Node
 node_modules/
+
+# Digital-twin generated datasets and scenario output.
+digital twin/output/
+digital twin/*.csv
+digital twin/*.jsonl
 
 # OS
 .DS_Store

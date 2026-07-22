@@ -128,11 +128,17 @@ class RetrievalQuery(SpecGuardSchema):
 
 
 class RetrievalResult(SpecGuardSchema):
-    """One ranked chunk returned as evidence for a later safety response."""
+    """One ranked chunk returned as evidence for a later safety response.
+
+    ``similarity_score`` is the raw cosine similarity. ``final_score`` is an
+    optional bounded deterministic reranking score that also considers explicit
+    safety metadata; keeping both makes ranking behavior auditable.
+    """
 
     chunk_id: NonEmptyString
     text: UsefulText
     similarity_score: float = Field(ge=0.0, le=1.0)
+    final_score: float | None = Field(default=None, ge=0.0, le=1.0)
     metadata: dict[str, Any] = Field(default_factory=dict)
     source_title: NonEmptyString
     source_url: NonEmptyString | None = None

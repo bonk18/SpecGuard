@@ -164,6 +164,7 @@ class JsonVectorStore(VectorStore):
                     chunk_id=chunk.chunk_id,
                     text=chunk.text,
                     similarity_score=score,
+                    final_score=score,
                     metadata=metadata,
                     source_title=chunk.document_title,
                     source_url=chunk.source_url,

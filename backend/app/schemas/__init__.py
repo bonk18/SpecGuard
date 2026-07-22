@@ -17,6 +17,7 @@ from app.schemas.incident import (
     NearMissRecord,
     SimilarIncident,
 )
+from app.schemas.maintenance import MaintenanceEvent
 from app.schemas.intelligence import (
     EvidenceReference,
     RecommendedAction,
@@ -34,6 +35,7 @@ __all__ = [
     "HistoricalIncident",
     "IncidentSearchQuery",
     "MaintenanceStatus",
+    "MaintenanceEvent",
     "NearMissRecord",
     "PermitStatus",
     "PermitType",

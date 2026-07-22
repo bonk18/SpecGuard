@@ -58,10 +58,18 @@ class SentenceTransformerEmbedder(Embedder):
     environment and are never required by the offline tests.
     """
 
-    def __init__(self, model_name: str | None = None) -> None:
+    def __init__(self, model_name: str | None = None, batch_size: int | None = None) -> None:
         name = model_name or os.getenv(
-            "SPECGUARD_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
+            "RAG_EMBEDDING_MODEL",
+            os.getenv("SPECGUARD_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"),
         )
+        configured_batch_size = (
+            batch_size
+            if batch_size is not None
+            else int(os.getenv("RAG_EMBEDDING_BATCH_SIZE", "32"))
+        )
+        if configured_batch_size < 1:
+            raise ValueError("batch_size must be positive")
         try:
             from sentence_transformers import SentenceTransformer
         except ImportError as exc:
@@ -77,6 +85,7 @@ class SentenceTransformerEmbedder(Embedder):
                 "or use the deterministic embedder."
             ) from exc
         self.model_name = name
+        self.batch_size = configured_batch_size
         self._dimension = int(self._model.get_sentence_embedding_dimension())
 
     @property
@@ -84,5 +93,15 @@ class SentenceTransformerEmbedder(Embedder):
         return self._dimension
 
     def embed(self, texts: Sequence[str]) -> list[list[float]]:
-        encoded = self._model.encode(list(texts), normalize_embeddings=True)
-        return [list(map(float, vector)) for vector in encoded]
+        encoded = self._model.encode(
+            list(texts),
+            batch_size=self.batch_size,
+            normalize_embeddings=True,
+            convert_to_numpy=True,
+        )
+        vectors = [list(map(float, vector)) for vector in encoded]
+        if any(len(vector) != self.dimension for vector in vectors):
+            raise RuntimeError(
+                f"Embedding model returned an unexpected vector dimension; expected {self.dimension}."
+            )
+        return vectors

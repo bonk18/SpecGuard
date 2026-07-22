@@ -29,7 +29,7 @@ backend/app/rag/
 ├── metadata.py           # manifest parsing and keyword tags
 ├── embedder.py           # deterministic and local Sentence Transformers modes
 ├── vector_store.py       # persistent JSON vector store
-├── retriever.py          # filtering and RiskEngineInput conversion
+├── retriever.py          # filtering, reranking, and RiskEngineInput conversion
 └── cli.py                # inspect, ingest, and query commands
 
 backend/data/knowledge/
@@ -90,11 +90,19 @@ enums from `app.schemas.common`. Supported mappings include `FIRE_EXPLOSION`,
 
 `DeterministicEmbedder` is a hash-based fake embedder for tests and repeatable
 offline demos. It never downloads a model. `SentenceTransformerEmbedder` is the
-real local adapter and defaults to
-`sentence-transformers/all-MiniLM-L6-v2`; its model name is configurable with
-`SPECGUARD_EMBEDDING_MODEL` or the adapter constructor. It batches text,
-normalizes vectors, and reports a helpful error if the package or model is not
-available. No API key or paid API is required.
+optional real local adapter and defaults to
+`sentence-transformers/all-MiniLM-L6-v2`; install it with:
+
+```bash
+pip install -r requirements-rag.txt
+```
+
+Its model name is configurable with `RAG_EMBEDDING_MODEL` (the older
+`SPECGUARD_EMBEDDING_MODEL` name remains accepted) or the adapter constructor.
+`RAG_EMBEDDING_BATCH_SIZE` controls batch size. It normalizes vectors, validates
+the model dimension, and reports a helpful error if the optional package or
+model is unavailable. No API key or paid API is required. The deterministic
+embedder remains the default for tests and the CLI.
 
 The lightweight persistent backend is an inspectable JSON file. It supports
 add, rebuild, persistent reload, document replacement, top-k cosine search,
@@ -102,6 +110,14 @@ document-type/risk/hazard/permit filters, dimension validation, and deterministi
 tie ordering. Reprocessing a document replaces its records, so repeated
 ingestion does not create uncontrolled duplicate chunks. Generated indexes are
 ignored by Git.
+
+Retrieval preserves raw cosine similarity as `similarity_score` and adds a
+bounded `final_score`. The final score uses small transparent boosts for exact
+risk, hazard, permit, title, and retrieval-mode matches. It reranks a larger
+candidate pool before taking top-k, so an exact hot-work or rising-LEL control
+is not crowded out by a merely similar incident passage. This is a deterministic
+metadata-aware reranker, not a trained model; the boosts are configurable via
+`RerankConfig` and never replace the raw semantic score.
 
 Every result includes chunk ID, text, score, title, document type, source path
 or URL, page range, section when available, synthetic status, and the complete
@@ -147,10 +163,22 @@ PYTHONPATH=. ../.venv/bin/python -m app.rag.cli ingest --rebuild
 `inspect` displays manifest entries, statuses, persisted chunk count, and
 embedding dimension. `ingest` displays documents loaded/skipped, missing files,
 extraction failures, chunks created/indexed, and every skip reason. Use
-`--embedder sentence-transformers` before the subcommand when the package and
-model are installed locally. Query also supports `--mode` values
+`--embedder sentence-transformers` on the `ingest` or `query` subcommand when
+the package and model are installed locally. The equivalent environment
+configuration is `RAG_EMBEDDER=sentence-transformers`. Query also supports
+`--mode` values
 `regulations_and_sops`, `similar_incidents`, or `all`, plus repeatable
 `--risk-type`, `--hazard`, `--permit-type`, and `--document-type` filters.
+
+For example:
+
+```bash
+PYTHONPATH=. ../.venv/bin/python -m app.rag.cli ingest --rebuild \
+  --embedder sentence-transformers
+PYTHONPATH=. ../.venv/bin/python -m app.rag.cli query \
+  --embedder sentence-transformers \
+  "Hydrocarbon gas is rising while hot work is active and ventilation has failed"
+```
 
 ## RiskEngineInput integration
 
@@ -172,12 +200,23 @@ This task does not map results into a final `SafetyIntelligenceResponse` yet.
 Future actions must remain advisory, human-approved, and explicitly supported
 by checked evidence.
 
+The runnable handoff example for the compound-risk team is
+`backend/examples/risk_to_retrieval.py`:
+
+```bash
+PYTHONPATH=backend .venv/bin/python backend/examples/risk_to_retrieval.py
+```
+
+It constructs a valid `RiskEngineInput`, searches SOP/regulatory evidence and
+historical incidents separately, and prints JSON containing query text, raw and
+final scores, source metadata, synthetic status, and matched safety tags.
+
 ## Tests, limitations, and safety
 
 Run the complete offline suite with:
 
 ```bash
-.venv/bin/python -m pytest
+PYTHONPATH=backend .venv/bin/python -m pytest backend/tests -v
 ```
 
 Tests use local fixtures and deterministic embeddings; they require no internet,

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass, field
+import os
 from pathlib import Path
 
 from app.rag.chunker import chunk_pages
@@ -39,12 +40,16 @@ class IngestionSummary:
     skipped_messages: list[str] = field(default_factory=list)
 
 
-def _embedder(name: str) -> Embedder:
-    if name == "deterministic":
+def _embedder(name: str | None) -> Embedder:
+    selected = name or os.getenv("RAG_EMBEDDER", "deterministic")
+    if selected == "deterministic":
         return DeterministicEmbedder()
-    if name == "sentence-transformers":
+    if selected == "sentence-transformers":
         return SentenceTransformerEmbedder()
-    raise ValueError("embedder must be deterministic or sentence-transformers")
+    raise ValueError(
+        "embedder must be deterministic or sentence-transformers; "
+        "set RAG_EMBEDDER or pass --embedder"
+    )
 
 
 def _source_root(manifest_path: Path) -> Path:
@@ -58,7 +63,7 @@ def ingest_documents(
     store_path: Path,
     *,
     rebuild: bool,
-    embedder_name: str,
+    embedder_name: str | None,
 ) -> IngestionSummary:
     entries = load_manifest(manifest_path)
     summary = IngestionSummary(documents_total=len(entries))
@@ -126,7 +131,13 @@ def _print_summary(summary: IngestionSummary) -> None:
         print(f"  Skipped: {message}")
 
 
-def ingest(manifest_path: Path, store_path: Path, *, rebuild: bool, embedder_name: str) -> int:
+def ingest(
+    manifest_path: Path,
+    store_path: Path,
+    *,
+    rebuild: bool,
+    embedder_name: str | None,
+) -> int:
     _print_summary(
         ingest_documents(
             manifest_path,
@@ -155,7 +166,7 @@ def query(
     *,
     top_k: int,
     mode: str,
-    embedder_name: str,
+    embedder_name: str | None,
     risk_types: list[str] | None = None,
     hazard_codes: list[str] | None = None,
     permit_types: list[str] | None = None,
@@ -182,7 +193,8 @@ def query(
         )
         source = result.source_path or result.source_url or "source unavailable"
         print(
-            f"[{result.similarity_score:.3f}] {result.source_title} "
+            f"[final={(result.final_score if result.final_score is not None else result.similarity_score):.3f}; "
+            f"raw={result.similarity_score:.3f}] {result.source_title} "
             f"({pages}; {result.document_type}; synthetic={result.is_synthetic}; source={source})"
         )
         if result.section:
@@ -196,15 +208,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="SpecGuard refinery-safety knowledge-base tools")
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--store", type=Path, default=DEFAULT_STORE)
-    parser.add_argument(
-        "--embedder",
-        choices=["deterministic", "sentence-transformers"],
-        default="deterministic",
-    )
+    embedder_choices = ["deterministic", "sentence-transformers"]
+    parser.add_argument("--embedder", choices=embedder_choices, default=None)
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     ingest_parser = subparsers.add_parser("ingest", help="load and index authorized local documents")
     ingest_parser.add_argument("--rebuild", action="store_true", help="replace the existing collection")
+    ingest_parser.add_argument("--embedder", choices=embedder_choices, default=argparse.SUPPRESS)
 
     subparsers.add_parser("inspect", help="show manifest and vector-store status")
 
@@ -220,6 +230,7 @@ def build_parser() -> argparse.ArgumentParser:
     query_parser.add_argument("--hazard", action="append", choices=[value.value for value in HazardCode])
     query_parser.add_argument("--permit-type", action="append", choices=[value.value for value in PermitType])
     query_parser.add_argument("--document-type", action="append")
+    query_parser.add_argument("--embedder", choices=embedder_choices, default=argparse.SUPPRESS)
     return parser
 
 

@@ -11,7 +11,7 @@ from app.rag.models import (
     RetrievalResult,
     SourceDocument,
 )
-from app.rag.retriever import Retriever, risk_to_retrieval_query
+from app.rag.retriever import RerankConfig, Retriever, risk_to_retrieval_query
 from app.rag.vector_store import JsonVectorStore
 
 __all__ = [
@@ -22,6 +22,7 @@ __all__ = [
     "ManifestEntry",
     "RetrievalQuery",
     "RetrievalResult",
+    "RerankConfig",
     "Retriever",
     "SentenceTransformerEmbedder",
     "SourceDocument",

@@ -16,6 +16,8 @@ from app.schemas import (
     SafetyIntelligenceResponse,
     ShiftLogEntry,
 )
+from app.schemas.maintainance import MaintenanceEvent as LegacyMaintenanceEvent
+from app.schemas.maintenance import MaintenanceEvent
 
 
 EXAMPLES_DIR = Path(__file__).parents[2] / "docs" / "examples"
@@ -215,3 +217,7 @@ def test_documentation_example_validates(
     schema: type[BaseModel],
 ) -> None:
     schema.model_validate_json((EXAMPLES_DIR / filename).read_text())
+
+
+def test_maintenance_typo_shim_preserves_legacy_import() -> None:
+    assert LegacyMaintenanceEvent is MaintenanceEvent
