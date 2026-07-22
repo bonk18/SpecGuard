@@ -4,22 +4,54 @@
 
 ## Purpose
 
-Describe a prototype workflow for checking atmosphere conditions before and during maintenance work. It deliberately avoids universal numeric thresholds; the approved site procedure and instrument instructions control.
+Describe a prototype workflow for checking and trending the atmosphere before
+and during maintenance, hot work, line breaking, or entry. The approved site
+procedure and instrument instructions always control.
 
 ## Preconditions
 
-- The tester is trained, authorized, and using an instrument within its inspection and calibration requirements.
-- The sampling plan covers the work area, low and high points where relevant, and likely release paths.
-- Results are recorded against the permit, location, equipment, and timestamp.
+- The tester is trained and authorized, and the instrument is suitable,
+  inspected, calibrated, and function-checked under the site process.
+- The sampling plan covers the work location, low and high points where
+  relevant, likely release paths, and the effect of failed ventilation.
+- Results can be recorded against the permit, equipment, location, timestamp,
+  and tester, with a reliable communication path to operations.
 
 ## Required checks
 
-Check oxygen, flammable-gas indication, and toxic-gas indicators required by the work scope. Treat a rising trend, an unexplained change, or a failed instrument as a reason to stop and seek human review. Do not rely on one reading to prove that conditions will remain stable.
+Check oxygen, flammable-gas indication, and toxic-gas indicators required by the
+work scope. Compare readings with the approved site limits and trend them over
+time. Treat rising LEL or hydrocarbon concentration, unexplained change, a
+failed instrument, or a lost sample as an unsafe change requiring review.
 
-## Suspension or stop-work conditions
+## Stop-work or suspension conditions
 
-Stop entry or hot work for an alarm, rising LEL indication, high H2S indication, low oxygen indication, ventilation failure, loss of communications, or an instrument problem. Withdraw workers according to the site emergency plan.
+Stop entry and hot work for an alarm, rising LEL, high H2S, low oxygen,
+ventilation failure, loss of communications, an instrument fault, or any
+reading that cannot be trusted. Suspend the affected permit until operations
+and safety authorities determine the next step.
 
-## Human approvals and limitations
+## Immediate actions
 
-The responsible operations and safety roles decide whether controls are adequate and whether a permit may be reauthorized. This synthetic procedure is for retrieval demonstrations only and is not a real refinery standard.
+Stop work, warn nearby workers, withdraw people from the affected area when
+conditions warrant, preserve the instrument record, and notify the supervisor
+and operations representative. Use the site alarm and evacuation procedure if
+directed; do not enter to investigate without authorization.
+
+## Human approvals
+
+The authorized tester reports results, but the responsible operations and safety
+roles decide whether controls are adequate, a permit is suspended, or emergency
+response is required. No automated reading authorizes a restart.
+
+## Reauthorization conditions
+
+Reauthorization requires the cause of the change to be reviewed, controls and
+ventilation to be verified, a new or repeated atmosphere test to be recorded,
+and the applicable permit to be approved again by authorized people.
+
+## Limitations
+
+This synthetic procedure does not set universal numerical thresholds, replace
+instrument instructions or calibration programs, or serve as a confined-space,
+hot-work, or emergency plan.

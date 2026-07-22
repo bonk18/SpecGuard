@@ -23,14 +23,28 @@ def load_manifest(path: Path) -> list[ManifestEntry]:
 
 
 _RISK_KEYWORDS: dict[RiskType, tuple[str, ...]] = {
-    RiskType.FIRE_EXPLOSION: ("fire", "explosion", "flash fire", "hydrocarbon", "ignition", "hot work"),
+    RiskType.FIRE_EXPLOSION: (
+        "fire",
+        "explosion",
+        "flash fire",
+        "hydrocarbon",
+        "ignition",
+        "hot work",
+    ),
     RiskType.TOXIC_GAS_EXPOSURE: ("h2s", "toxic gas", "poisonous gas"),
     RiskType.OXYGEN_DEFICIENCY: ("low oxygen", "oxygen deficiency", "oxygen level", "confined space"),
     RiskType.OVERPRESSURE: ("overpressure", "pressure rising", "pressure relief"),
     RiskType.EQUIPMENT_FAILURE: ("equipment failure", "pump failure", "malfunction", "ventilation"),
 }
 _HAZARD_KEYWORDS: dict[HazardCode, tuple[str, ...]] = {
-    HazardCode.RISING_LEL: ("rising lel", "hydrocarbon concentration", "gas concentration", "%lel"),
+    HazardCode.RISING_LEL: (
+        "rising lel",
+        "rising hydrocarbon",
+        "hydrocarbon concentration",
+        "hydrocarbon readings",
+        "gas concentration",
+        "%lel",
+    ),
     HazardCode.HIGH_H2S: ("h2s", "hydrogen sulfide"),
     HazardCode.LOW_OXYGEN: ("low oxygen", "oxygen deficiency"),
     HazardCode.PRESSURE_RISING: ("pressure rising", "pressure increase"),
@@ -45,7 +59,14 @@ _HAZARD_KEYWORDS: dict[HazardCode, tuple[str, ...]] = {
     HazardCode.INCOMPLETE_ISOLATION: ("incomplete isolation", "isolation not verified", "lockout"),
     HazardCode.HOT_WORK_ACTIVE: ("hot work", "ignition source", "welding", "cutting"),
     HazardCode.CONFINED_SPACE_ACTIVE: ("confined space", "entry permit"),
-    HazardCode.WORKERS_PRESENT: ("workers present", "workers are present", "personnel present", "people are present", "workers", "personnel"),
+    HazardCode.WORKERS_PRESENT: (
+        "workers present",
+        "workers are present",
+        "personnel present",
+        "people are present",
+        "workers",
+        "personnel",
+    ),
     HazardCode.OVERDUE_MAINTENANCE: ("overdue maintenance", "maintenance overdue"),
 }
 _PERMIT_KEYWORDS: dict[PermitType, tuple[str, ...]] = {

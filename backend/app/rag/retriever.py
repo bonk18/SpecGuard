@@ -32,7 +32,8 @@ def risk_to_retrieval_query(risk: RiskEngineInput, top_k: int = 5) -> RetrievalQ
     query_text = (
         f"{risk.predicted_incident} risk at a refinery {_ZONE_NAMES[risk.zone_id]}. "
         f"{detail_text.capitalize()}. Retrieve applicable stop-work precautions, "
-        "gas-testing requirements, permit actions and similar incidents."
+        "gas-testing requirements, permit suspension, isolation verification, "
+        "evacuation procedures, reauthorization conditions, and similar incidents."
     )
     permits = [PermitType.HOT_WORK] if HazardCode.HOT_WORK_ACTIVE in risk.contributing_factors else []
     return RetrievalQuery(
@@ -60,6 +61,8 @@ class Retriever:
     ) -> list[RetrievalResult]:
         if isinstance(query, str):
             query = RetrievalQuery(query_text=query, top_k=top_k or 5)
+        elif top_k is not None:
+            query = query.model_copy(update={"top_k": top_k})
         if mode not in {"regulations_and_sops", "similar_incidents", "all"}:
             raise ValueError("mode must be regulations_and_sops, similar_incidents, or all")
         document_types = list(query.document_types)
@@ -75,5 +78,7 @@ class Retriever:
             "permit_types": [value.value for value in query.permit_types],
             "document_type": document_types,
         }
-        vector = self.embedder.embed([query.query_text])[0]
-        return self.store.query(vector, top_k=top_k or query.top_k, filters=filters)
+        vectors = self.embedder.embed([query.query_text])
+        if len(vectors) != 1:
+            raise ValueError("Embedder must return exactly one vector for one query")
+        return self.store.query(vectors[0], top_k=query.top_k, filters=filters)

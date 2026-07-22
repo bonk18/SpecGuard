@@ -1,6 +1,5 @@
 """Offline tests for the refinery-safety knowledge-base foundation."""
 
-import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -9,6 +8,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.rag.chunker import chunk_pages
+from app.rag.cli import ingest_documents
 from app.rag.document_loader import DocumentLoadError, load_document
 from app.rag.embedder import DeterministicEmbedder
 from app.rag.metadata import enrich_chunks, load_manifest
@@ -16,11 +16,12 @@ from app.rag.models import DocumentPage, RetrievalQuery, RetrievalResult, Source
 from app.rag.retriever import Retriever, risk_to_retrieval_query
 from app.rag.text_cleaner import clean_pages, clean_text
 from app.rag.vector_store import JsonVectorStore
-from app.schemas import RiskEngineInput, RiskType
+from app.schemas import HazardCode, RiskEngineInput, RiskType
 
 
 ROOT = Path(__file__).parents[2]
 MANIFEST = ROOT / "backend/data/knowledge/manifests/documents.json"
+KNOWLEDGE_ROOT = ROOT / "backend/data/knowledge"
 
 
 def sample_page(text: str, page_number: int = 1) -> DocumentPage:
@@ -84,6 +85,11 @@ def test_text_loading_and_empty_file_handling(tmp_path: Path) -> None:
     with pytest.raises(DocumentLoadError):
         load_document(document.model_copy(update={"source_path": str(empty)}))
 
+    whitespace = tmp_path / "whitespace.txt"
+    whitespace.write_text(" \n\t", encoding="utf-8")
+    with pytest.raises(DocumentLoadError, match="contains no text"):
+        load_document(document.model_copy(update={"source_path": str(whitespace)}))
+
 
 def test_pdf_loading_preserves_page_numbers_without_network(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     class FakePage:
@@ -95,7 +101,7 @@ def test_pdf_loading_preserves_page_numbers_without_network(monkeypatch: pytest.
 
     class FakeReader:
         def __init__(self, _: str) -> None:
-            self.pages = [FakePage("Page one"), FakePage("Page two")]
+            self.pages = [FakePage("Page one"), FakePage(""), FakePage("Page two")]
 
     monkeypatch.setitem(sys.modules, "pypdf", SimpleNamespace(PdfReader=FakeReader))
     path = tmp_path / "note.pdf"
@@ -104,7 +110,7 @@ def test_pdf_loading_preserves_page_numbers_without_network(monkeypatch: pytest.
 
     pages = load_document(document)
 
-    assert [page.page_number for page in pages] == [1, 2]
+    assert [page.page_number for page in pages] == [1, 3]
 
 
 def test_unsupported_and_missing_file_handling(tmp_path: Path) -> None:
@@ -137,8 +143,10 @@ def test_chunk_ids_are_deterministic_and_overlap_is_present() -> None:
 
 def test_manifest_parsing_and_metadata_keyword_tagging() -> None:
     entries = load_manifest(MANIFEST)
-    assert len(entries) == 6
-    assert all(entry.is_synthetic for entry in entries)
+    assert len(entries) == 18
+    assert sum(entry.is_synthetic for entry in entries) == 6
+    assert all(entry.local_path for entry in entries)
+    assert all(entry.local_path.startswith("raw/") for entry in entries)
     chunks = enrich_chunks(
         chunk_pages(
             [
@@ -197,6 +205,43 @@ def test_vector_store_insertion_retrieval_and_filters(tmp_path: Path) -> None:
     )
     assert risk_results
     assert all("FIRE_EXPLOSION" in result.metadata["risk_types"] for result in risk_results)
+    assert results[0].document_type == "SOP"
+    assert results[0].is_synthetic is False
+
+    hazard_results = retriever.retrieve(
+        RetrievalQuery(
+            query_text="ventilation and rising gas",
+            hazard_codes=[HazardCode.HOT_WORK_ACTIVE],
+        ),
+        mode="all",
+    )
+    assert hazard_results
+    assert all("HOT_WORK_ACTIVE" in result.metadata["hazard_codes"] for result in hazard_results)
+
+
+def test_fake_embedding_is_deterministic_and_store_validates_dimension(tmp_path: Path) -> None:
+    embedder = DeterministicEmbedder(dimension=32)
+    assert embedder.embed(["same text"])[0] == embedder.embed(["same text"])[0]
+    chunk = enrich_chunks(chunk_pages([sample_page("A useful gas testing control passage.")]))[0]
+    store = JsonVectorStore(tmp_path / "dimension-store.json")
+    store.add([chunk], embedder.embed([chunk.text]))
+    assert store.embedding_dimension == 32
+    with pytest.raises(ValueError, match="does not match store dimension"):
+        store.add([chunk], [[0.0] * 16])
+
+
+def test_vector_store_persists_and_repeated_ingestion_replaces_records(tmp_path: Path) -> None:
+    chunks = enrich_chunks(chunk_pages([sample_page("A persistent safety evidence passage.")]))
+    embedder = DeterministicEmbedder()
+    path = tmp_path / "persistent-store.json"
+    store = JsonVectorStore(path)
+    vectors = embedder.embed([chunk.text for chunk in chunks])
+    store.add(chunks, vectors)
+    store.add(chunks, vectors)
+    assert store.count == 1
+    reopened = JsonVectorStore(path)
+    assert reopened.count == 1
+    assert Retriever(reopened, embedder).retrieve("persistent safety evidence")
 
 
 def test_risk_engine_input_becomes_retrieval_query() -> None:
@@ -210,7 +255,9 @@ def test_synthetic_hot_work_retrieval(tmp_path: Path) -> None:
     entries = load_manifest(MANIFEST)
     chunks = []
     for entry in entries:
-        pages = clean_pages(load_document(entry.to_source_document(), ROOT))
+        if not entry.is_synthetic:
+            continue
+        pages = clean_pages(load_document(entry.to_source_document(), KNOWLEDGE_ROOT))
         chunks.extend(enrich_chunks(chunk_pages(pages)))
     embedder = DeterministicEmbedder()
     store = JsonVectorStore(tmp_path / "synthetic-store.json")
@@ -221,3 +268,50 @@ def test_synthetic_hot_work_retrieval(tmp_path: Path) -> None:
     assert results
     assert any("hot work" in result.text.lower() for result in results)
     assert all(result.source_title for result in results)
+
+
+def test_synthetic_scenario_retrieves_relevant_sops(tmp_path: Path) -> None:
+    entries = [entry for entry in load_manifest(MANIFEST) if entry.is_synthetic]
+    chunks = []
+    for entry in entries:
+        chunks.extend(enrich_chunks(chunk_pages(clean_pages(load_document(entry.to_source_document(), KNOWLEDGE_ROOT)))))
+    embedder = DeterministicEmbedder()
+    store = JsonVectorStore(tmp_path / "scenario-store.json")
+    store.add(chunks, embedder.embed([chunk.text for chunk in chunks]))
+    query = (
+        "Hydrocarbon gas is rising near Pump P-101 while a hot-work permit is active. "
+        "Ventilation has failed and workers are present in Zone B."
+    )
+    results = Retriever(store, embedder).retrieve(
+        RetrievalQuery(query_text=query, document_types=["SOP"], top_k=6),
+        mode="all",
+    )
+    titles = {result.source_title for result in results}
+    assert {
+        "Synthetic Hot Work Safety Procedure",
+        "Synthetic Gas Testing and Atmosphere Monitoring Procedure",
+        "Synthetic Ventilation Failure Response Procedure",
+        "Synthetic Emergency Evacuation Procedure",
+    } <= titles
+
+
+def test_incremental_cli_ingestion_reports_and_is_idempotent(tmp_path: Path) -> None:
+    manifest = tmp_path / "manifests" / "documents.json"
+    manifest.parent.mkdir(parents=True)
+    knowledge_root = manifest.parent.parent
+    source = knowledge_root / "raw" / "note.md"
+    source.parent.mkdir(parents=True)
+    source.write_text("# Local SOP\n\nA useful gas testing control passage.", encoding="utf-8")
+    manifest.write_text(
+        "[{\"document_id\":\"DOC-LOCAL\",\"title\":\"Local SOP\","
+        "\"document_type\":\"SOP\",\"local_path\":\"raw/note.md\","
+        "\"allowed_for_public_repo\":true,\"is_synthetic\":true,"
+        "\"processing_status\":\"ready\"}]",
+        encoding="utf-8",
+    )
+    store_path = tmp_path / "vector" / "chunks.json"
+    first = ingest_documents(manifest, store_path, rebuild=True, embedder_name="deterministic")
+    second = ingest_documents(manifest, store_path, rebuild=False, embedder_name="deterministic")
+    assert first.documents_loaded == second.documents_loaded == 1
+    assert first.chunks_created == second.chunks_created == 1
+    assert second.persisted_chunks == 1

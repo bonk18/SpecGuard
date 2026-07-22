@@ -1,227 +1,192 @@
 # SpecGuard RAG Knowledge Base
 
-This document explains the Task 2 knowledge-base foundation for a teammate who
-knows basic Python but is new to retrieval-augmented generation (RAG).
+This is the Task 2 retrieval layer for the refinery-safety prototype. It stops
+at evidence retrieval: it does not generate final recommendations, call an
+LLM, or control refinery equipment.
 
-## 1. What RAG is
+## What RAG is and why SpecGuard uses it
 
-RAG is a two-stage pattern. First, a system retrieves relevant passages from a
-known document collection. Later, an AI model may use those passages to write an
-explanation. Retrieval evidence is not an answer and does not make a safety
-recommendation automatically correct.
-
-SpecGuard currently implements ingestion and retrieval only. It does not call an
-LLM and it does not control refinery equipment.
-
-## 2. Why SpecGuard uses RAG
-
-Sensor and permit alerts tell us what the system observes. Procedures,
-historical incidents, and authorized regulations provide context for a human
-reviewer. Returning passages with document titles, paths, URLs, and page ranges
-lets the future intelligence pipeline cite its evidence instead of inventing a
-clause or copying an entire document into every response.
-
-The data flow is:
+Retrieval-augmented generation (RAG) first finds relevant passages in a known
+collection and may later give those passages to a language model. Retrieval is
+evidence, not a validated answer. SpecGuard uses it to connect sensor, permit,
+and risk signals to procedures, regulations, and incident records that a human
+reviewer can inspect and cite.
 
 ```text
-Authorized safety documents
-        ↓
-Loader
-        ↓
-Cleaner
-        ↓
-Chunker
-        ↓
-Metadata enrichment
-        ↓
-Embedding model
-        ↓
-Vector store
-        ↓
-Retriever
-        ↓
-EvidenceReference / SimilarIncident
-        ↓
-Future LLM recommendation pipeline
+authorized local documents
+  -> loader -> conservative cleaner -> chunker -> safety metadata
+  -> local embeddings -> persistent JSON vector store -> filtered retrieval
 ```
 
-## 3. Embeddings, vector store, retriever, and LLM
-
-An embedding is a list of numbers representing the words and concepts in a
-passage. Similar passages have nearby vectors. A vector database stores those
-vectors and the original text. A retriever embeds a query, finds nearby vectors,
-applies metadata filters, and returns ranked evidence. An LLM is a separate,
-later component that could explain the evidence; it is not part of this task.
-
-The repository includes a small persistent JSON vector store so the prototype
-works without a database dependency. `SentenceTransformerEmbedder` is an
-optional adapter for `sentence-transformers/all-MiniLM-L6-v2` when that model is
-available locally. The deterministic embedder is used by tests and offline
-demos. A Chroma adapter can be added behind the `VectorStore` interface later if
-the project adopts Chroma.
-
-## 4. Folder structure
+## Folder structure
 
 ```text
 backend/app/rag/
-├── models.py             # internal document and retrieval contracts
-├── document_loader.py    # .pdf, .md, and .txt extraction
+├── models.py             # internal page, chunk, manifest, and result models
+├── document_loader.py    # PDF, Markdown, and plain-text loading
 ├── text_cleaner.py       # conservative layout cleanup
 ├── chunker.py            # deterministic section-aware chunks
 ├── metadata.py           # manifest parsing and keyword tags
-├── embedder.py           # deterministic and optional ML embedders
-├── vector_store.py       # persistent backend-neutral store
-├── retriever.py          # filtering and risk-to-query conversion
-└── cli.py                # ingest, inspect, and query commands
+├── embedder.py           # deterministic and local Sentence Transformers modes
+├── vector_store.py       # persistent JSON vector store
+├── retriever.py          # filtering and RiskEngineInput conversion
+└── cli.py                # inspect, ingest, and query commands
 
 backend/data/knowledge/
-├── raw/regulations/      # authorized files added manually; not committed
-├── raw/case_studies/     # authorized files added manually; not committed
-├── raw/synthetic_sops/   # public prototype Markdown documents
-├── processed/            # optional local intermediate files
+├── raw/case_studies/
+├── raw/regulations/
+├── raw/synthetic_sops/
 ├── manifests/documents.json
-└── vector_store/         # generated JSON index; ignored by Git
+├── processed/
+└── vector_store/
 ```
 
-The internal models in `backend/app/rag/models.py` are deliberately separate
-from public API contracts such as `EvidenceReference` and `RiskEngineInput`.
+The manifest currently contains six public synthetic SOPs and twelve local PDF
+entries. The PDFs use their real local filenames, have no fabricated URLs, and
+are marked `pending_review` and not public-repository safe until authorization
+and provenance are verified.
 
-## 5. Add a document legally
+## Loading documents
 
-Only process material that the team is authorized to use. Do not automatically
-download paid, restricted, or copyrighted OISD standards, and do not scrape a
-site that prohibits automated downloading. Synthetic SOPs in this repository
-are clearly labelled `SYNTHETIC PROTOTYPE SOP — NOT FOR REAL INDUSTRIAL USE`.
+The loader accepts `.pdf`, `.md`, and `.txt`. Markdown and text become page 1;
+PDF pages retain their page numbers. Source document ID, title, local path,
+URL, authority, publication metadata, version, tags, document type, and
+synthetic status are carried into pages, chunks, and result metadata.
 
-To add an authorized PDF manually:
+Missing files, empty files, unsupported extensions, decode errors, PDF parser
+errors, and PDFs with no extractable text are reported as skips. OCR is not
+attempted. A scanned PDF therefore needs an authorized, separate OCR workflow.
 
-1. Download it legally using the publisher's permitted process.
-2. Place it under `backend/data/knowledge/raw/regulations/` or
-   `backend/data/knowledge/raw/case_studies/`.
-3. Add a manifest entry with the real title, authority, source URL, page/source
-   metadata, checksum if available, and `allowed_for_public_repo` set correctly.
-4. Run ingestion and inspect the extracted chunks.
-5. Verify page numbers and source attribution before using a result.
-6. Never commit a restricted document or a generated vector index.
-
-The manifest must not claim that a local file exists when it does not. The
-initial manifest contains only public synthetic SOPs.
-
-## 6. Manifest format
-
-`backend/data/knowledge/manifests/documents.json` is a JSON array. Each entry
-has a stable `document_id`, title, document type, authority, optional URL and
-publication metadata, a repository-relative `local_path`, a synthetic flag,
-tags, and `processing_status`. Pydantic validates this file before ingestion.
-
-## 7. Text extraction
-
-Markdown and text files are read as UTF-8 and become one page. PDF files use the
-optional `pypdf` dependency and preserve the PDF page number. Pages with no
-extractable text are skipped and reported; OCR is intentionally out of scope.
-An empty or missing file, unsupported extension, or undecodable file produces a
-clear ingestion error.
-
-## 8. Conservative cleaning
+## Conservative cleaning
 
 Cleaning removes null bytes, normalizes line endings and repeated whitespace,
-collapses excessive blank lines, and joins only obvious word breaks at a line
-boundary. Repeated page headers and footers are removed only when the exact line
-repeats across pages. The cleaner never paraphrases safety text, removes
-negations such as “must not,” changes units, or rewrites equipment identifiers.
+collapses excessive blank lines, and joins only a clear lowercase word break at
+a line boundary. An exact first/last line repeated across pages is treated as a
+header/footer. Headings, numbered clauses, bullets, equipment identifiers,
+units, and negations such as `not`, `must not`, and `prohibited` are preserved.
 
-## 9. Chunking
+Aggressive rewriting is dangerous for safety documents: changing one negation,
+unit, identifier, or clause can reverse the meaning of a control. The cleaner
+therefore does not paraphrase or summarize.
 
-The chunker recognizes Markdown and numbered headings, uses words as a
-transparent token approximation, and defaults to about 700 words with 120 words
-of overlap. Both values are configurable. Chunk IDs are deterministic hashes of
-the document, position, and text, so rebuilding produces stable identifiers.
-Empty or meaningless short chunks are not emitted. Every chunk keeps its
-document ID, title, page range, section hint, and source path/URL.
+## Chunking and metadata
 
-## 10. Metadata
+The chunker uses word count as a transparent token approximation. Defaults are
+700 words per chunk and 120 words of overlap, both configurable. It recognizes
+Markdown and numbered headings, emits no empty or meaningless tiny chunks, and
+stores deterministic IDs, page ranges, section hints, document metadata, and
+source provenance. Rebuilding the same source produces the same chunk IDs.
 
-`metadata.py` uses transparent keyword mappings to tag risk types, hazards,
-permit types, and equipment families. It recognizes concepts such as
-`FIRE_EXPLOSION`, `RISING_LEL`, `VENTILATION_FAILURE`, and `HOT_WORK`. This is
-not an LLM classification step. Tags are useful for filtering, but they should
-be reviewed when a production knowledge base is introduced.
+`metadata.py` applies deterministic keyword mappings; no LLM is used for
+ingestion. It reuses the controlled `RiskType`, `HazardCode`, and `PermitType`
+enums from `app.schemas.common`. Supported mappings include `FIRE_EXPLOSION`,
+`TOXIC_GAS_EXPOSURE`, `OXYGEN_DEFICIENCY`, `OVERPRESSURE`,
+`EQUIPMENT_FAILURE`, `RISING_LEL`, `HIGH_H2S`, `LOW_OXYGEN`,
+`PRESSURE_RISING`, `VENTILATION_FAILURE`, `INCOMPLETE_ISOLATION`,
+`HOT_WORK_ACTIVE`, `CONFINED_SPACE_ACTIVE`, `WORKERS_PRESENT`,
+`OVERDUE_MAINTENANCE`, and the requested permit types.
 
-## 11. Ingestion and queries
+## Embeddings and vector retrieval
 
-From the repository root, use the deterministic offline embedder:
+`DeterministicEmbedder` is a hash-based fake embedder for tests and repeatable
+offline demos. It never downloads a model. `SentenceTransformerEmbedder` is the
+real local adapter and defaults to
+`sentence-transformers/all-MiniLM-L6-v2`; its model name is configurable with
+`SPECGUARD_EMBEDDING_MODEL` or the adapter constructor. It batches text,
+normalizes vectors, and reports a helpful error if the package or model is not
+available. No API key or paid API is required.
+
+The lightweight persistent backend is an inspectable JSON file. It supports
+add, rebuild, persistent reload, document replacement, top-k cosine search,
+document-type/risk/hazard/permit filters, dimension validation, and deterministic
+tie ordering. Reprocessing a document replaces its records, so repeated
+ingestion does not create uncontrolled duplicate chunks. Generated indexes are
+ignored by Git.
+
+Every result includes chunk ID, text, score, title, document type, source path
+or URL, page range, section when available, synthetic status, and the complete
+chunk metadata dictionary.
+
+## Adding an authorized PDF
+
+1. Obtain the document through a permitted, authorized process; do not
+   automatically download standards or incident reports.
+2. Place it in `backend/data/knowledge/raw/regulations/` or
+   `backend/data/knowledge/raw/case_studies/`.
+3. Add a manifest entry using a path relative to
+   `backend/data/knowledge/`, for example
+   `raw/regulations/oisd_std_116_fire_protection.pdf`.
+4. Use the real title and filename, a real source URL only when verified, the
+   correct authority/publication/version values, and an optional SHA-256
+   checksum. Use `pending_review` or `missing` when it is not ready; never
+   pretend a missing file was loaded.
+5. Confirm licensing and set `allowed_for_public_repo` correctly. A local file
+   marked false must not be committed or redistributed.
+6. Ingest, inspect the report, and verify extracted pages and attribution.
+
+## Verified commands
+
+From the repository root, the offline deterministic commands are:
 
 ```bash
-PYTHONPATH=backend .venv/bin/python -m app.rag.cli ingest --rebuild
 PYTHONPATH=backend .venv/bin/python -m app.rag.cli inspect
-PYTHONPATH=backend .venv/bin/python -m app.rag.cli query "hot work with rising hydrocarbon gas" --mode regulations_and_sops
+PYTHONPATH=backend .venv/bin/python -m app.rag.cli ingest --rebuild
+PYTHONPATH=backend .venv/bin/python -m app.rag.cli query \
+  "Hydrocarbon gas is rising near Pump P-101 while a hot-work permit is active. Ventilation has failed and workers are present in Zone B." \
+  --mode all --top-k 6 --document-type SOP
 ```
 
-The CLI reads the manifest, loads only local paths, cleans and chunks pages,
-adds deterministic metadata, embeds chunks, and writes the ignored JSON index
-under `backend/data/knowledge/vector_store/`. It prints skipped or missing
-documents instead of pretending they were ingested.
+The equivalent commands from `backend/` are:
 
-To use the optional local Sentence Transformers model, install the project's
-ML dependencies and run the same commands with `--embedder sentence-transformers`.
-The model may need a one-time local download; no API key is required by this
-adapter.
+```bash
+cd backend
+PYTHONPATH=. ../.venv/bin/python -m app.rag.cli inspect
+PYTHONPATH=. ../.venv/bin/python -m app.rag.cli ingest --rebuild
+```
 
-Retrieval has three modes: `regulations_and_sops`, `similar_incidents`, and
-`all`. Metadata filters are applied before ranked results are returned. Results
-are validated `RetrievalResult` objects containing source title, page range,
-section, and a score between 0 and 1.
+`inspect` displays manifest entries, statuses, persisted chunk count, and
+embedding dimension. `ingest` displays documents loaded/skipped, missing files,
+extraction failures, chunks created/indexed, and every skip reason. Use
+`--embedder sentence-transformers` before the subcommand when the package and
+model are installed locally. Query also supports `--mode` values
+`regulations_and_sops`, `similar_incidents`, or `all`, plus repeatable
+`--risk-type`, `--hazard`, `--permit-type`, and `--document-type` filters.
 
-## 12. RiskEngineInput to a retrieval query
+## RiskEngineInput integration
 
-The existing public `RiskEngineInput` contract is converted by
-`risk_to_retrieval_query`. For example, a Zone B alert for rising LEL, active hot
-work, failed ventilation, and workers present becomes a deterministic query for
-stop-work precautions, gas testing, permit actions, and similar incidents. The
-same risk and hazard enums are reused, so a producer cannot silently change
-`HOT_WORK_ACTIVE` into a differently-spelled filter.
+`risk_to_retrieval_query` deterministically converts the existing public
+`RiskEngineInput` into a `RetrievalQuery`. It includes the predicted incident,
+zone, hazard wording, and requests for stop-work precautions, gas testing,
+permit suspension, isolation verification, evacuation, reauthorization, and
+similar incidents. It also carries controlled risk, hazard, and hot-work permit
+filters. No LLM is involved.
 
 ```python
 from app.rag.retriever import risk_to_retrieval_query
 
-query = risk_to_retrieval_query(risk_engine_input)
-results = retriever.retrieve(query, mode="regulations_and_sops")
+retrieval_query = risk_to_retrieval_query(risk_engine_input)
+results = retriever.retrieve(retrieval_query, mode="regulations_and_sops")
 ```
 
-## 13. Later connection to SafetyIntelligenceResponse
+This task does not map results into a final `SafetyIntelligenceResponse` yet.
+Future actions must remain advisory, human-approved, and explicitly supported
+by checked evidence.
 
-This task stops at evidence. A future NLP/RAG service can map each
-`RetrievalResult` to the public `EvidenceReference` contract, combine it with
-`SimilarIncident` records, and produce a `SafetyIntelligenceResponse`. Any
-recommended action must remain advisory and `requires_human_approval=True` by
-default. Evidence must be checked and cited; retrieval does not guarantee that
-an AI explanation is factually correct or safe for a real refinery.
+## Tests, limitations, and safety
 
-## 14. Limitations and safety warnings
+Run the complete offline suite with:
 
-- The prototype zones and synthetic SOPs are abstractions, not a refinery's
-  approved operating procedures.
-- Sensor ranges and metadata keywords are not a validated process-safety model.
-- Recommendations are advisory and must not directly control equipment.
-- Synthetic documents must remain visibly labelled.
-- Public or restricted documents may have copyright and licensing conditions;
-  preserve attribution and page numbers.
-- A retrieved passage can be incomplete, stale, or incorrectly tagged.
-- No OISD or other restricted standard is included in this repository.
+```bash
+.venv/bin/python -m pytest
+```
 
-## 15. Troubleshooting
+Tests use local fixtures and deterministic embeddings; they require no internet,
+model download, API key, or real OISD PDF. The prototype has no OCR, no
+validated industrial thresholds, no guarantee that keyword tags are complete,
+and no guarantee that a retrieved passage is current or sufficient. Synthetic
+SOPs are not approved procedures. Never use this repository to direct real
+industrial work, bypass human approvals, or operate equipment.
 
-**No chunks were ingested:** check `local_path`, the repository root, and the
-manifest status. Missing files are reported rather than fabricated.
-
-**PDF dependency error:** install the declared `pypdf` dependency from
-`requirements.txt`. A scanned PDF may still contain no text; it needs an
-authorized manual/OCR workflow, which is outside this task.
-
-**No retrieval results:** run `inspect`, confirm the generated store exists,
-try `--mode all`, and check that requested metadata filters match the chunk
-tags. Use the deterministic embedder for repeatable offline tests.
-
-**Generated files appear in Git:** the vector-store and processed-data paths
-are ignored. Remove local generated files before committing if a custom path was
-used.
+Respect copyright, licensing, and access restrictions for every local source.
+Do not commit `.env`, model caches, generated indexes, restricted standards, or
+incident reports without authorization.

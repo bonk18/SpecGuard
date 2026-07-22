@@ -81,6 +81,9 @@ class DocumentPage(SpecGuardSchema):
     document_type: NonEmptyString
     authority: NonEmptyString | None = None
     is_synthetic: bool = False
+    publication_date: date | None = None
+    version: NonEmptyString | None = None
+    tags: list[NonEmptyString] = Field(default_factory=list)
 
 
 class DocumentChunk(SpecGuardSchema):
@@ -102,6 +105,9 @@ class DocumentChunk(SpecGuardSchema):
     is_synthetic: bool = False
     source_url: NonEmptyString | None = None
     source_path: NonEmptyString | None = None
+    publication_date: date | None = None
+    version: NonEmptyString | None = None
+    tags: list[NonEmptyString] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def page_range_is_ordered(self) -> "DocumentChunk":
@@ -134,6 +140,8 @@ class RetrievalResult(SpecGuardSchema):
     page_start: int = Field(ge=1)
     page_end: int = Field(ge=1)
     section: NonEmptyString | None = None
+    document_type: NonEmptyString
+    is_synthetic: bool = False
 
     @model_validator(mode="after")
     def page_range_is_ordered(self) -> "RetrievalResult":

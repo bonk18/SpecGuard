@@ -18,3 +18,6 @@ uvicorn==0.51.0
 # Optional for extracting text from authorized, text-based PDFs. Scanned PDFs
 # still require a separate manual/OCR workflow and are not processed here.
 pypdf>=4.0,<6
+# Optional local embedding adapter. Model weights are loaded separately by the
+# user and are never downloaded by the test suite.
+sentence-transformers>=3.0,<6

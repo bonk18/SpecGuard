@@ -22,6 +22,9 @@ def _page(document: SourceDocument, page_number: int, text: str) -> DocumentPage
         document_type=document.document_type,
         authority=document.authority,
         is_synthetic=document.is_synthetic,
+        publication_date=document.publication_date,
+        version=document.version,
+        tags=document.tags,
     )
 
 
@@ -57,6 +60,8 @@ def load_document(document: SourceDocument, base_dir: Path | None = None) -> lis
             text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError as exc:
             raise DocumentLoadError(f"Could not decode UTF-8 source file: {path}") from exc
+        if not text.strip():
+            raise DocumentLoadError(f"Source file contains no text: {path}")
         return [_page(document, 1, text)]
 
     if suffix == ".pdf":

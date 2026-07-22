@@ -31,8 +31,8 @@ def _section_name(line: str) -> str | None:
 
 def _units(pages: list[DocumentPage]) -> list[_Unit]:
     result: list[_Unit] = []
+    section: str | None = None
     for page in pages:
-        section: str | None = None
         paragraph: list[str] = []
 
         def flush() -> None:
@@ -117,6 +117,9 @@ def chunk_pages(
                 is_synthetic=document.is_synthetic,
                 source_url=document.source_url,
                 source_path=document.source_path,
+                publication_date=document.publication_date,
+                version=document.version,
+                tags=document.tags,
             )
         )
 

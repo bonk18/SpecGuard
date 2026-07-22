@@ -4,29 +4,55 @@
 
 ## Purpose
 
-Provide a prototype checklist for welding, cutting, grinding, or another ignition-producing task near refinery equipment. This text is demonstration content and is not a legal or operational standard.
+Provide a prototype evidence checklist for welding, cutting, grinding, or any
+other ignition-producing task near refinery equipment. It is not a legal,
+engineering, or operating standard.
 
 ## Preconditions
 
-- A current hot-work permit is issued for the exact work location and equipment.
-- The area supervisor confirms the work scope, boundaries, fire watch, and emergency communications.
-- Isolation status and gas-testing requirements are reviewed with the responsible operations representative.
-- Combustible materials are removed or protected where practical.
+- An authorized supervisor has confirmed the exact work boundary, equipment,
+  active hot-work permit, fire watch, communications, and escape route.
+- Operations has reviewed the isolation plan and known hydrocarbon release paths.
+- The work party is briefed on stop-work authority and the site emergency plan.
 
 ## Required checks
 
-- Test the atmosphere using an approved instrument and record the result, time, location, and tester.
-- Continue monitoring at the frequency required by the site procedure. Rising hydrocarbon readings, a high H2S indication, low oxygen, or failed ventilation requires stop-work and reassessment.
-- Confirm workers are accounted for and have the required PPE and access route.
+- Test the atmosphere with an approved, suitable, in-calibration instrument and
+  record the time, location, tester, and result against the permit.
+- Continue monitoring as required by the site procedure, including likely
+  release paths. Rising hydrocarbon readings, high H2S, low oxygen, or a failed
+  instrument requires immediate suspension and reassessment.
+- Confirm combustible materials are controlled, the fire watch is available,
+  workers are accounted for, and access remains clear.
 
-## Suspension or stop-work conditions
+## Stop-work or suspension conditions
 
-Stop hot work when the permit is suspended or expired, gas conditions trend in the wrong direction, ventilation fails, an isolation cannot be verified, or the fire watch is unavailable. Move people to a safe location and notify the supervisor.
+Suspend hot work immediately if the permit is suspended or expired, gas
+conditions trend adversely, ventilation fails, isolation is incomplete or
+uncertain, communications are lost, or the fire watch is unavailable. Do not
+restart simply because a later reading appears better.
 
-## Human approvals and restart
+## Immediate actions
 
-Only an authorized supervisor and operations representative may approve a new gas test, permit reauthorization, and restart. This prototype does not authorize an automated equipment command.
+Stop the ignition source safely, warn the work party, notify operations and the
+area supervisor, and move workers to the designated safe location when exposure
+or fire risk warrants. Initiate the site alarm and evacuation process when
+directed by the responsible emergency authority.
+
+## Human approvals
+
+Only the authorized supervisor, operations representative, and applicable safety
+or emergency authority may decide whether controls are adequate, suspend the
+permit, or approve a response. This prototype never issues an equipment command.
+
+## Reauthorization conditions
+
+Reauthorization requires a verified control plan, completed isolation review,
+new atmosphere testing, restored ventilation where required, an available fire
+watch, and documented human approval under the site permit process.
 
 ## Limitations
 
-Synthetic prototype content is not a substitute for the facility permit system, approved SOPs, engineering review, or emergency plan.
+Do not use this synthetic prototype for real industrial work. It does not define
+universal gas thresholds, ventilation performance, PPE, permit rules, or an
+emergency response plan.

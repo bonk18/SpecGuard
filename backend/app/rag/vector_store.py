@@ -55,6 +55,7 @@ class JsonVectorStore(VectorStore):
     def __init__(self, path: Path) -> None:
         self.path = path
         self._records: list[dict[str, Any]] = []
+        self._embedding_dimension: int | None = None
         self._load()
 
     def _load(self) -> None:
@@ -64,6 +65,10 @@ class JsonVectorStore(VectorStore):
         if not isinstance(payload, list):
             raise ValueError(f"Vector store must contain a JSON array: {self.path}")
         self._records = payload
+        dimensions = {len(record.get("embedding", [])) for record in self._records}
+        if len(dimensions) > 1 or (dimensions and 0 in dimensions):
+            raise ValueError(f"Vector store contains inconsistent or empty embeddings: {self.path}")
+        self._embedding_dimension = next(iter(dimensions), None)
 
     def _persist(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -73,9 +78,24 @@ class JsonVectorStore(VectorStore):
     def count(self) -> int:
         return len(self._records)
 
+    @property
+    def embedding_dimension(self) -> int | None:
+        return self._embedding_dimension
+
     def add(self, chunks: list[DocumentChunk], embeddings: list[list[float]]) -> None:
         if len(chunks) != len(embeddings):
             raise ValueError("Each chunk must have exactly one embedding")
+        if not chunks:
+            return
+        dimensions = {len(embedding) for embedding in embeddings}
+        if not dimensions or 0 in dimensions or len(dimensions) != 1:
+            raise ValueError("All embeddings must be non-empty and have one shared dimension")
+        dimension = next(iter(dimensions))
+        if self._embedding_dimension is not None and dimension != self._embedding_dimension:
+            raise ValueError(
+                f"Embedding dimension {dimension} does not match store dimension "
+                f"{self._embedding_dimension}"
+            )
         by_id = {record["chunk"]["chunk_id"]: record for record in self._records}
         for chunk, embedding in zip(chunks, embeddings):
             if not embedding:
@@ -85,10 +105,15 @@ class JsonVectorStore(VectorStore):
                 "embedding": [float(value) for value in embedding],
             }
         self._records = list(by_id.values())
+        self._embedding_dimension = dimension
         self._persist()
 
     def rebuild(self, chunks: list[DocumentChunk], embeddings: list[list[float]]) -> None:
         self._records = []
+        self._embedding_dimension = None
+        if not chunks:
+            self._persist()
+            return
         self.add(chunks, embeddings)
 
     def delete_documents(self, document_ids: list[str]) -> None:
@@ -146,6 +171,8 @@ class JsonVectorStore(VectorStore):
                     page_start=chunk.page_start,
                     page_end=chunk.page_end,
                     section=chunk.section,
+                    document_type=chunk.document_type,
+                    is_synthetic=chunk.is_synthetic,
                 )
             )
         results.sort(key=lambda result: (-result.similarity_score, result.chunk_id))

@@ -12,6 +12,9 @@ backend/data/knowledge/vector_store/*
 !backend/data/knowledge/vector_store/.gitkeep
 backend/data/knowledge/processed/*
 !backend/data/knowledge/processed/.gitkeep
+backend/data/knowledge/model_cache/
+.cache/
+.huggingface/
 
 # Virtual Environment
 .venv/
